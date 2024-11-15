@@ -1,7 +1,7 @@
 #![allow(warnings)]
 use std::collections::BTreeSet;
 use datetime::LocalDate;
-use types::{Appartment, Day, Floor, Position, ThreeAppartmentFloorPos, TwoAppartmentFloorPos};
+use types::{create_full_year, Appartment, Day, Floor, Position, ThreeAppartmentFloorPos, TwoAppartmentFloorPos, YearMap};
 
 pub mod types;
 
@@ -17,16 +17,19 @@ fn main() {
     let appartment = Appartment::new(floor, position);
     let day = Day::new(year, appartment, exclude_sunday, &holidays);
 
-    let day2 = &day.next(exclude_sunday, &holidays).expect("");
-    let day3 = &day2.next(exclude_sunday, &holidays).expect("");
-    let day4 = &day3.next(exclude_sunday, &holidays).expect("");
-    let day5 = &day4.next(exclude_sunday, &holidays).expect("");
-    let day6 = &day5.next(exclude_sunday, &holidays).expect("");
+    // let day2 = &day.next(exclude_sunday, &holidays).expect("");
+    // let day3 = &day2.next(exclude_sunday, &holidays).expect("");
+    // let day4 = &day3.next(exclude_sunday, &holidays).expect("");
+    // let day5 = &day4.next(exclude_sunday, &holidays).expect("");
+    // let day6 = &day5.next(exclude_sunday, &holidays).expect("");
 
-    println!("Day1: {:?}", day.print());
-    println!("Day2: {:?}", day2.print());
-    println!("Day3: {:?}", day3.print());
-    println!("Day4: {:?}", day4.print());
-    println!("Day5: {:?}", day5.print());
-    println!("Day6: {:?}", day6.print());
+    // println!("Day1: {:?}", day.print());
+    // println!("Day2: {:?}", day2.print());
+    // println!("Day3: {:?}", day3.print());
+    // println!("Day4: {:?}", day4.print());
+    // println!("Day5: {:?}", day5.print());
+    // println!("Day6: {:?}", day6.print());
+    let YearMap(year_map) = create_full_year(year, appartment, exclude_sunday, &holidays);
+    let key: usize = 11;
+    println!("Year: {:?}", year_map.get(&key));
 }

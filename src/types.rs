@@ -1,5 +1,5 @@
-use datetime::{DatePiece, LocalDate, Weekday};
-use std::{collections::BTreeSet, error::Error};
+use datetime::{DatePiece, LocalDate, Month, Weekday, Year};
+use std::{collections::{BTreeSet, HashMap}, error::Error, iter::Map};
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 enum FloorPosition {
@@ -329,6 +329,14 @@ impl AppartmentOfDay {
     }
 }
 
+// container type for the data of a day
+#[derive(Debug)]
+pub struct DayHTMLData {
+    pub date: String,
+    pub day: String,
+    pub appartment: String
+}
+
 #[derive(Debug)]
 pub struct Day {
     date: LocalDate,
@@ -336,7 +344,7 @@ pub struct Day {
 }
 
 impl Day {
-    //@return first day of the year
+    // @return first day of the year
     pub fn new(year: i64, 
            appartment: Appartment, 
            exclude_sunday: bool,
@@ -358,6 +366,14 @@ impl Day {
 
     pub fn print(&self) -> String {
         [print_local_date(self.date), print_local_weekday(self.date), self.appartment.print_appartment()].join(" ")
+    }
+
+    pub fn create_html_data(&self) -> DayHTMLData {
+        DayHTMLData 
+        { date: print_local_date(self.date)
+        , day: print_local_weekday(self.date)
+        , appartment:  self.appartment.print_appartment()
+        }
     }
 }
 
@@ -407,4 +423,32 @@ fn print_local_date(date: LocalDate) -> String {
         datetime::Month::December => "12"
     };
     return [day, month.to_owned()].join(".");
+}
+
+// @key months from january
+// @value vector of appartment texts
+#[derive(Debug)]
+pub struct YearMap(pub HashMap<usize, Vec<DayHTMLData>>);
+
+pub fn create_full_year(
+    year: i64, 
+    last_appartment: Appartment, 
+    exclude_sunday: bool, 
+    holidays: &BTreeSet<LocalDate>) -> YearMap {
+    let mut year_map = HashMap::new();
+    let mut current_day = Day::new(year, last_appartment, exclude_sunday, holidays);
+
+    year_map.insert(current_day.date.month().months_from_january(), 
+                    vec![current_day.create_html_data()]);
+
+    while let Ok(valid_day) = current_day.next(exclude_sunday, holidays) {
+        let current_month = valid_day.date.month().months_from_january();
+        if let Some(vector) = year_map.get_mut(&current_month) {
+            vector.push(valid_day.create_html_data());
+        } else {
+            year_map.insert(current_month, vec![valid_day.create_html_data()]);
+        }
+        current_day = valid_day;
+    };
+    YearMap(year_map)
 }
