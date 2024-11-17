@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 num-traits = "0.2.19"
 datetime = "0.5.2"
+build_html = "2.5.0"

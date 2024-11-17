@@ -4,6 +4,7 @@ use datetime::LocalDate;
 use types::{create_full_year, Appartment, Day, Floor, Position, ThreeAppartmentFloorPos, TwoAppartmentFloorPos, YearMap};
 
 pub mod types;
+pub mod html;
 
 fn main() {
     let year:i64 = 2025;
@@ -15,7 +16,7 @@ fn main() {
     let two_app_floor = TwoAppartmentFloorPos::new_left(2, 1);
     let position = Position::ThreeAppartmentFloor(three_app_floor);
     let appartment = Appartment::new(floor, position);
-    let day = Day::new(year, appartment, exclude_sunday, &holidays);
+    // let day = Day::new(year, appartment, exclude_sunday, &holidays);
 
     // let day2 = &day.next(exclude_sunday, &holidays).expect("");
     // let day3 = &day2.next(exclude_sunday, &holidays).expect("");
@@ -29,7 +30,9 @@ fn main() {
     // println!("Day4: {:?}", day4.print());
     // println!("Day5: {:?}", day5.print());
     // println!("Day6: {:?}", day6.print());
-    let YearMap(year_map) = create_full_year(year, appartment, exclude_sunday, &holidays);
+    let year_map = create_full_year(year, appartment, exclude_sunday, &holidays);
+    // let YearMap(inner_year_map) = year_map;
     let key: usize = 11;
-    println!("Year: {:?}", year_map.get(&key));
+    // println!("Year: {:?}", inner_year_map.get(&key));
+    html::create_year_html(&year_map);
 }
