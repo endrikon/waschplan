@@ -1,5 +1,5 @@
 use datetime::{DatePiece, LocalDate, Month, Weekday, Year};
-use std::{collections::{BTreeSet, HashMap}, error::Error, iter::Map};
+use std::{collections::{BTreeSet, HashMap}, error::Error, fmt::{self, Debug}, iter::Map};
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 enum FloorPosition {
@@ -343,6 +343,17 @@ pub struct Day {
     appartment: AppartmentOfDay,
 }
 
+#[derive(Debug)]
+struct WrongYearError;
+
+impl Error for WrongYearError {}
+
+impl fmt::Display for WrongYearError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Error: The year changed.")
+    }
+}
+
 impl Day {
     // @return first day of the year
     pub fn new(year: i64, 
@@ -350,14 +361,22 @@ impl Day {
            exclude_sunday: bool,
            holidays: &BTreeSet<LocalDate>) -> Day {
         // This is safe b/c there is always at least one day per year
+        
         let date = LocalDate::yd(year, 1).unwrap();
         let appartment = create_appartment_of_day(date, appartment, exclude_sunday, &holidays);
         Day { date, appartment }
     }
 
     pub fn next(&self, exclude_sunday: bool, holidays: &BTreeSet<LocalDate>) -> Result<Day, Box<dyn Error>> {
-        
-        let date = LocalDate::yd(self.date.year(), self.date.yearday() as i64 + 1)?;
+
+        let current_year = self.date.year();
+        let date = LocalDate::yd(current_year, self.date.yearday() as i64 + 1)?;
+
+        if date.year() != current_year {
+            let err = Box::new(WrongYearError);
+            return Result::Err(err);
+        }
+
         let app = self.appartment.extract_appartment().clone();
         let appartment = create_appartment_of_day(date, app, exclude_sunday, holidays);
 
@@ -406,6 +425,23 @@ fn print_local_weekday(date: LocalDate) -> String {
     weekday.to_string()
 }
 
+pub fn month_to_string(month: Month) -> String {
+    return match month {
+        datetime::Month::January => "Januar".to_owned(),
+        datetime::Month::February => "Februar".to_owned(),
+        datetime::Month::March => "März".to_owned(),
+        datetime::Month::April => "April".to_owned(),
+        datetime::Month::May => "Mai".to_owned(),
+        datetime::Month::June => "Juni".to_owned(),
+        datetime::Month::July => "Juli".to_owned(),
+        datetime::Month::August => "August".to_owned(),
+        datetime::Month::September => "September".to_owned(),
+        datetime::Month::October => "Oktober".to_owned(),
+        datetime::Month::November => "November".to_owned(),
+        datetime::Month::December => "Dezember".to_owned()
+    };
+}
+
 fn print_local_date(date: LocalDate) -> String {
     let day = date.day().to_string();
     let month = match date.month() {
@@ -428,7 +464,7 @@ fn print_local_date(date: LocalDate) -> String {
 // @key months from january
 // @value vector of appartment texts
 #[derive(Debug)]
-pub struct YearMap(pub HashMap<usize, Vec<DayHTMLData>>);
+pub struct YearMap(pub HashMap<i8, Vec<DayHTMLData>>);
 
 pub fn create_full_year(
     year: i64, 
@@ -438,11 +474,11 @@ pub fn create_full_year(
     let mut year_map = HashMap::new();
     let mut current_day = Day::new(year, last_appartment, exclude_sunday, holidays);
 
-    year_map.insert(current_day.date.month().months_from_january(), 
+    year_map.insert(current_day.date.month().months_from_january() as i8, 
                     vec![current_day.create_html_data()]);
 
     while let Ok(valid_day) = current_day.next(exclude_sunday, holidays) {
-        let current_month = valid_day.date.month().months_from_january();
+        let current_month = valid_day.date.month().months_from_january() as i8;
         if let Some(vector) = year_map.get_mut(&current_month) {
             vector.push(valid_day.create_html_data());
         } else {
