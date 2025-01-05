@@ -1,7 +1,7 @@
 #![allow(warnings)]
 use std::collections::{BTreeSet, HashMap};
 use datetime::LocalDate;
-use types::{create_full_year, Appartment, Day, Floor, Position, ThreeAppartmentFloorPos, TwoAppartmentFloorPos, YearMap};
+use types::{create_full_year, Apartment, ApartmentInfo, Day, FloorInfo, Position, ThreeApartmentFloorInfo, ThreeApartmentFloorPos, TwoApartmentFloorInfo, TwoApartmentFloorPos, YearMap};
 
 pub mod types;
 pub mod html;
@@ -10,34 +10,25 @@ fn main() {
     let year:i64 = 2025;
     let exclude_sunday:bool = true;
     let holidays:BTreeSet<LocalDate> = BTreeSet::new();
-    let floor = Floor{floor: 3, has_ground_floor: false, max: 3};
-    // let position = Position::SingleAppartmentFloor;
-    let three_app_floor = ThreeAppartmentFloorPos::new_middle(1, 1);
-    let two_app_floor = TwoAppartmentFloorPos::new_left(2, 1);
-    let position = Position::ThreeAppartmentFloor(three_app_floor);
+    let single_app_floor_info = FloorInfo::OneApartment;
+    let three_app_floor_info = 
+        FloorInfo::ThreeApartments(
+            ThreeApartmentFloorInfo{left_days_total: 2, middle_days_total: 1, right_days_total: 2});
+    let two_app_floor_info = 
+        FloorInfo::TwoApartments(TwoApartmentFloorInfo{left_days_total: 2, right_days_total: 2});
     let position_map = HashMap::from([
-                        (0, Position::ThreeAppartmentFloor(three_app_floor)),
-                        (1, Position::TwoAppartmentFloor(two_app_floor)),
-                        (2, Position::TwoAppartmentFloor(two_app_floor)),
-                        (3, Position::ThreeAppartmentFloor(three_app_floor))]);
-    let appartment = Appartment::new(floor, position, position_map);
-    // let day = Day::new(year, appartment, exclude_sunday, &holidays);
-
-    // let day2 = &day.next(exclude_sunday, &holidays).expect("");
-    // let day3 = &day2.next(exclude_sunday, &holidays).expect("");
-    // let day4 = &day3.next(exclude_sunday, &holidays).expect("");
-    // let day5 = &day4.next(exclude_sunday, &holidays).expect("");
-    // let day6 = &day5.next(exclude_sunday, &holidays).expect("");
-
-    // println!("Day1: {:?}", day.print());
-    // println!("Day2: {:?}", day2.print());
-    // println!("Day3: {:?}", day3.print());
-    // println!("Day4: {:?}", day4.print());
-    // println!("Day5: {:?}", day5.print());
-    // println!("Day6: {:?}", day6.print());
-    let year_map = create_full_year(year, appartment, exclude_sunday, &holidays);
-    // let YearMap(inner_year_map) = year_map;
-    let key: usize = 11;
-    // println!("Year: {:?}", inner_year_map.get(&key));
+                        (0, single_app_floor_info),
+                        (1, three_app_floor_info.clone()),
+                        (2, three_app_floor_info),
+                        (3, two_app_floor_info)]);
+    let appartment_info 
+        = ApartmentInfo 
+        { current_floor: 2
+        , max_floor: 3
+        , position: types::FloorPosition::Middle
+        , days_left: 1
+        };
+    let last_appartment = Apartment::new(appartment_info, &position_map).unwrap();
+    let year_map = create_full_year(year, last_appartment, &position_map, exclude_sunday, &holidays);
     html::create_year_html(&year_map);
 }
