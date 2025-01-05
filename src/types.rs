@@ -253,19 +253,22 @@ impl Position {
 
 #[derive(Copy, Clone, Debug)]
 pub struct Floor {
-    max: u32,
-    floor: u32
+    pub max: u32,
+    pub has_ground_floor: bool,
+    pub floor: u32
 }
 
 impl Floor {
-    pub fn new(max: u32) -> Floor {
-        Floor { floor: 0, max }
-    }
     pub fn next(&self) -> Floor {
         if self.is_max() {
-            Floor::new(self.max)
+            let min = if (self.has_ground_floor) {
+                        0
+                      } else {
+                            1
+                      };
+            Floor{ max: self.max, has_ground_floor: self.has_ground_floor, floor: min}
         } else {
-            Floor { max: self.max, floor: self.floor + 1}
+            Floor{ max: self.max, has_ground_floor: self.has_ground_floor, floor: self.floor + 1 }
         }
     }
     pub fn print(&self) -> String {
@@ -279,23 +282,34 @@ impl Floor {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct Appartment {
     floor: Floor,
-    position: Position
+    position: Position,
+    position_map: HashMap<u32, Position>
 }
 
 impl Appartment {
-    pub fn new(floor: Floor, position: Position) -> Appartment {
-        Appartment { floor, position }
+    pub fn new(floor: Floor, position: Position, position_map: HashMap<u32, Position>) -> Appartment {
+        Appartment{ floor, position, position_map }
     }
 
     pub fn next(&self) -> Appartment {
         if self.position.is_max() {
-            //TODO: add some tests for edge cases 
-            Appartment { floor: self.floor.next(), position: self.position.next() }
+            let next_floor = self.floor.next();
+            Appartment 
+            { floor: next_floor
+            //TODO: unwrap can fail here if the hashmap doesn't have enough elements
+            // find a way to make sure that the number of elements is equal to number of floors
+            , position: self.position_map.get(&next_floor.floor).unwrap().min_value()
+            , position_map: self.position_map.clone()
+            }
         } else {
-            Appartment { floor: self.floor, position: self.position.next() }
+            Appartment 
+            { floor: self.floor
+            , position: self.position.next() 
+            , position_map: self.position_map.clone()
+            }
         }
     }
 

@@ -1,5 +1,5 @@
 #![allow(warnings)]
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 use datetime::LocalDate;
 use types::{create_full_year, Appartment, Day, Floor, Position, ThreeAppartmentFloorPos, TwoAppartmentFloorPos, YearMap};
 
@@ -10,12 +10,17 @@ fn main() {
     let year:i64 = 2025;
     let exclude_sunday:bool = true;
     let holidays:BTreeSet<LocalDate> = BTreeSet::new();
-    let floor = Floor::new(3);
+    let floor = Floor{floor: 3, has_ground_floor: false, max: 3};
     // let position = Position::SingleAppartmentFloor;
-    let three_app_floor = ThreeAppartmentFloorPos::new_middle(2, 1);
+    let three_app_floor = ThreeAppartmentFloorPos::new_middle(1, 1);
     let two_app_floor = TwoAppartmentFloorPos::new_left(2, 1);
     let position = Position::ThreeAppartmentFloor(three_app_floor);
-    let appartment = Appartment::new(floor, position);
+    let position_map = HashMap::from([
+                        (0, Position::ThreeAppartmentFloor(three_app_floor)),
+                        (1, Position::TwoAppartmentFloor(two_app_floor)),
+                        (2, Position::TwoAppartmentFloor(two_app_floor)),
+                        (3, Position::ThreeAppartmentFloor(three_app_floor))]);
+    let appartment = Appartment::new(floor, position, position_map);
     // let day = Day::new(year, appartment, exclude_sunday, &holidays);
 
     // let day2 = &day.next(exclude_sunday, &holidays).expect("");
