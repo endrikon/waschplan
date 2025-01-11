@@ -2,14 +2,18 @@
 use std::collections::{BTreeSet, HashMap};
 use datetime::LocalDate;
 use types::{create_full_year, Apartment, ApartmentInfo, Day, FloorInfo, Position, SingleApartmentFloorInfo, ThreeApartmentFloorInfo, ThreeApartmentFloorPos, TwoApartmentFloorInfo, TwoApartmentFloorPos, YearMap};
+use tokio::runtime::Runtime;
 
 pub mod types;
 pub mod html;
+pub mod holidays;
 
 fn main() {
-    let year:i64 = 2025;
+    let rt = Runtime::new().unwrap();
+
+    let year: u16 = 2025;
     let exclude_sunday:bool = true;
-    let holidays:BTreeSet<LocalDate> = BTreeSet::new();
+    let holidays = rt.block_on(holidays::get_holidays(year, "CH".to_string(), "CH-NW".to_string())).unwrap();
     let single_app_floor_info = FloorInfo::OneApartment(SingleApartmentFloorInfo{ days_total: 1 });
     let three_app_floor_info = 
         FloorInfo::ThreeApartments(
@@ -31,4 +35,6 @@ fn main() {
     let last_appartment = Apartment::new(appartment_info, &position_map).unwrap();
     let year_map = create_full_year(year, last_appartment, &position_map, exclude_sunday, &holidays);
     html::create_year_html(&year_map);
+
+    println!("holidays = {holidays:?}");
 }

@@ -1,6 +1,6 @@
 use datetime::{DatePiece, LocalDate, Month, Weekday, Year};
 use num_traits::AsPrimitive;
-use std::{collections::{BTreeSet, HashMap}, error::Error, fmt::{self, Debug}, iter::Map};
+use std::{collections::{BTreeMap, BTreeSet, HashMap}, error::Error, fmt::{self, Debug}, iter::Map};
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum FloorPosition {
@@ -422,21 +422,21 @@ impl Apartment {
 #[derive(Debug)]
 enum ApartmentOfDay {
     CurrentApartment(Apartment),
-    LastApartment(Apartment)    
+    LastApartment(Apartment, String)
 }
 
 impl ApartmentOfDay {
     fn extract_appartment(&self) -> &Apartment {
         match self {
             Self::CurrentApartment(app) => app,
-            Self::LastApartment(app) => app
+            Self::LastApartment(app, _) => app
         }
     }
 
     fn print_appartment(&self) -> String {
         return match self {
             Self::CurrentApartment(app) => app.print(),
-            Self::LastApartment(_) => "".to_owned()
+            Self::LastApartment(_, reason) => reason.to_owned()
         };
     }
 }
@@ -468,19 +468,19 @@ impl fmt::Display for WrongYearError {
 
 impl Day {
     // @return first day of the year
-    pub fn new(year: i64, 
+    pub fn new(year: u16, 
            appartment: Apartment, 
            position_map: &HashMap<u32, FloorInfo>,
            exclude_sunday: bool,
-           holidays: &BTreeSet<LocalDate>) -> Day {
+           holidays: &BTreeMap<LocalDate, String>) -> Day {
         // This is safe b/c there is always at least one day per year
         
-        let date = LocalDate::yd(year, 1).unwrap();
+        let date = LocalDate::yd(year as i64, 1).unwrap();
         let appartment = create_appartment_of_day(date, appartment, position_map, exclude_sunday, &holidays);
         Day { date, appartment }
     }
 
-    pub fn next(&self, position_map: &HashMap<u32, FloorInfo>, exclude_sunday: bool, holidays: &BTreeSet<LocalDate>) -> Result<Day, Box<dyn Error>> {
+    pub fn next(&self, position_map: &HashMap<u32, FloorInfo>, exclude_sunday: bool, holidays: &BTreeMap<LocalDate, String>) -> Result<Day, Box<dyn Error>> {
 
         let current_year = self.date.year();
         let date = LocalDate::yd(current_year, self.date.yearday() as i64 + 1)?;
@@ -514,15 +514,21 @@ fn create_appartment_of_day(
     last_appartment: Apartment, 
     position_map: &HashMap<u32, FloorInfo>,
     exclude_sunday: bool, 
-    holidays: &BTreeSet<LocalDate>) -> ApartmentOfDay {
-    
-    if (exclude_sunday && date.weekday() == Weekday::Sunday)
-        || holidays.contains(&date) {
+    holidays: &BTreeMap<LocalDate, String>) -> ApartmentOfDay {
+
+    match holidays.get(&date) {
+        Some(holiday_name) => 
             // keep a stale value if the current day is not used
-            ApartmentOfDay::LastApartment(last_appartment)
-    } else {
-            // go to the next appartment
-            ApartmentOfDay::CurrentApartment(last_appartment.next(position_map))
+            ApartmentOfDay::LastApartment(last_appartment, holiday_name.to_owned()),
+        None => {
+            if (exclude_sunday && date.weekday() == Weekday::Sunday) {
+                // keep a stale value if the current day is not used
+                ApartmentOfDay::LastApartment(last_appartment, "".to_owned())
+            } else {
+                // go to the next appartment
+                ApartmentOfDay::CurrentApartment(last_appartment.next(position_map))
+            }
+        }
     }
 }
 
@@ -581,11 +587,11 @@ fn print_local_date(date: LocalDate) -> String {
 pub struct YearMap(pub HashMap<i8, Vec<DayHTMLData>>);
 
 pub fn create_full_year(
-    year: i64, 
+    year: u16, 
     last_appartment: Apartment, 
     position_map: &HashMap<u32, FloorInfo>,
     exclude_sunday: bool, 
-    holidays: &BTreeSet<LocalDate>) -> YearMap {
+    holidays: &BTreeMap<LocalDate, String>) -> YearMap {
     let mut year_map = HashMap::new();
     let mut current_day = Day::new(year, last_appartment, position_map, exclude_sunday, holidays);
 
