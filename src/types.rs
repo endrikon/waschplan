@@ -20,24 +20,67 @@ impl FloorPosition {
 }
 
 #[derive(Copy, Clone, Debug)]
-struct CurrentFloorState {
-    floor_position: FloorPosition,
+struct DayState {
     days_left: u8,
     days_total: u8
+}
+
+impl DayState {
+    fn new(days_total: u8) -> DayState {
+        DayState{ days_left: days_total, days_total }
+    }
+
+    fn next(&self) -> DayState {
+        if self.days_left == 0 {
+            return DayState{ days_total: self.days_total, days_left: self.days_total };
+        }
+        DayState{ days_left: self.days_left - 1 , days_total: self.days_total }
+    }
+
+    // NOTE: max means here that there are no days left
+    fn is_max(&self) -> bool {
+        0 == self.days_left
+    }
+
+    fn is_min(&self) -> bool {
+        self.days_total == self.days_left
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+struct CurrentFloorState {
+    floor_position: FloorPosition,
+    day_state: DayState
 }
 
 impl CurrentFloorState {
     fn new(pos: FloorPosition, days_total: u8) -> CurrentFloorState {
         CurrentFloorState 
         { floor_position: pos
-        , days_left: days_total
-        , days_total 
+        , day_state: DayState::new(days_total)
         }
+    }
+
+    fn next(&self) -> CurrentFloorState {
+        CurrentFloorState{ floor_position: self.floor_position, day_state: self.day_state.next() }
+    }
+
+    fn is_max(&self) -> bool {
+        self.day_state.is_max()
+    }
+
+    fn is_min(&self) -> bool {
+        self.day_state.is_min()
     }
 
     fn print(&self) -> String {
         self.floor_position.print()
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct SingleApartmentFloorInfo {
+    pub days_total: u8,
 }
 
 #[derive(Clone, Debug)]
@@ -55,14 +98,15 @@ pub struct ThreeApartmentFloorInfo {
 
 #[derive(Clone, Debug)]
 pub enum FloorInfo {
-    OneApartment,
+    OneApartment(SingleApartmentFloorInfo),
     TwoApartments(TwoApartmentFloorInfo),
     ThreeApartments(ThreeApartmentFloorInfo)
 }
 
 fn initial_appartment_position(floor_info: &FloorInfo) -> Position {
     match floor_info {
-        FloorInfo::OneApartment => Position::SingleApartmentFloor,
+        FloorInfo::OneApartment(info) => 
+            Position::SingleApartmentFloor(SingleApartmentFloorPos::new(info.days_total, info.days_total - 1)),
         FloorInfo::TwoApartments(info) => 
             Position::TwoApartmentFloor(TwoApartmentFloorPos::new_left(info.left_days_total, info.left_days_total - 1)),
         FloorInfo::ThreeApartments(info) => 
@@ -72,7 +116,10 @@ fn initial_appartment_position(floor_info: &FloorInfo) -> Position {
 
 fn create_position(floor_info: &FloorInfo, floor_position: &FloorPosition, days_left: u8) -> Option<Position> {
     match floor_info {
-        FloorInfo::OneApartment => Some(Position::SingleApartmentFloor),
+        FloorInfo::OneApartment(info) => {
+            let position = SingleApartmentFloorPos::new(info.days_total, days_left);
+            Some(Position::SingleApartmentFloor(position))
+        },
         FloorInfo::TwoApartments(info) => match floor_position {
             FloorPosition::Left => {
                 let position = TwoApartmentFloorPos::new_left(info.left_days_total, days_left);
@@ -102,6 +149,29 @@ fn create_position(floor_info: &FloorInfo, floor_position: &FloorPosition, days_
 }
 
 #[derive(Copy, Clone, Debug)]
+pub struct SingleApartmentFloorPos {
+    position: DayState
+}
+
+impl SingleApartmentFloorPos {
+    fn new(days_total: u8, days_left: u8) -> SingleApartmentFloorPos {
+        SingleApartmentFloorPos { position: DayState { days_left, days_total } }
+    }
+
+    fn next(&self) -> SingleApartmentFloorPos {
+        SingleApartmentFloorPos { position: self.position.next() }
+    }
+
+    fn is_max(&self) -> bool {
+        self.position.is_max()
+    }
+
+    fn is_min(&self) -> bool {
+        self.position.is_min()
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
 pub struct TwoApartmentFloorPos {
     position: CurrentFloorState
 }
@@ -110,68 +180,45 @@ impl TwoApartmentFloorPos {
     pub fn new_left(days_total: u8, days_left: u8) -> TwoApartmentFloorPos {
         let position = CurrentFloorState
                        { floor_position: FloorPosition::Left
-                       , days_left
-                       , days_total: days_total - 1
+                       , day_state: DayState{ days_left, days_total: days_total - 1 }
                        };
         TwoApartmentFloorPos { position }
     }
     pub fn new_right(days_total: u8, days_left: u8) -> TwoApartmentFloorPos {
         let position = CurrentFloorState
                        { floor_position: FloorPosition::Right
-                       , days_left
-                       , days_total: days_total - 1
+                       , day_state: DayState{ days_left, days_total: days_total - 1 }
                        };
         TwoApartmentFloorPos { position }
     }
     fn is_max(&self) -> bool {
         let position = self.position;
         if FloorPosition::Right == position.floor_position 
-            && position.days_left == 0 {
+            && position.is_max() {
                 return true
         }
         false
     }
     fn min_value(&self) -> TwoApartmentFloorPos {
         let position 
-            = CurrentFloorState 
-            { floor_position: FloorPosition::Left
-            , days_left: self.position.days_total
-            , days_total: self.position.days_total 
-            };
+            = CurrentFloorState::new(FloorPosition::Left, self.position.day_state.days_total);
             
         TwoApartmentFloorPos { position }
     }
-    fn max_value(&self) -> TwoApartmentFloorPos {
-        let position 
-            = CurrentFloorState 
-            { floor_position: FloorPosition::Right
-            , days_left: 0
-            , days_total: self.position.days_total 
-            };
-            
-        TwoApartmentFloorPos { position }
-    }
+
     fn next(&self, floor_info: &TwoApartmentFloorInfo) -> TwoApartmentFloorPos {
         let position = self.position;
-        if position.days_left == 0 {
-            let (next_floor_position, days_left, days_total) = 
+        if position.is_max() {
+            let (next_floor_position, days_total) = 
                 if position.floor_position == FloorPosition::Left {
-                    (FloorPosition::Right, floor_info.right_days_total - 1, floor_info.right_days_total - 1)
+                    (FloorPosition::Right, floor_info.right_days_total - 1)
                 } else {
-                    (FloorPosition::Left, floor_info.left_days_total - 1, floor_info.left_days_total - 1)
+                    (FloorPosition::Left, floor_info.left_days_total - 1)
                 };
-            let next_position = CurrentFloorState
-                                { floor_position: next_floor_position
-                                , days_left
-                                , days_total
-                                };
-            return TwoApartmentFloorPos { position: next_position }
+            let next_position = CurrentFloorState::new(next_floor_position, days_total);
+            return TwoApartmentFloorPos{ position: next_position }
         }
-        let next_position = CurrentFloorState
-                            { floor_position: position.floor_position
-                            , days_left: position.days_left - 1
-                            , days_total: position.days_total
-                            };
+        let next_position = self.position.next();
         TwoApartmentFloorPos { position: next_position }
     }
 
@@ -189,79 +236,55 @@ impl ThreeApartmentFloorPos {
     pub fn new_left(days_total: u8, days_left: u8) -> ThreeApartmentFloorPos {
         let position = CurrentFloorState
                        { floor_position: FloorPosition::Left
-                       , days_left
-                       , days_total: days_total - 1
+                       , day_state: DayState{ days_left, days_total: days_total - 1 }
                        };
-        ThreeApartmentFloorPos { position }
+        ThreeApartmentFloorPos{ position }
     }
     pub fn new_middle(days_total: u8, days_left: u8) -> ThreeApartmentFloorPos {
         let position = CurrentFloorState
                        { floor_position: FloorPosition::Middle
-                       , days_left
-                       , days_total: days_total - 1
+                       , day_state: DayState{ days_left, days_total: days_total - 1 }
                        };
-        ThreeApartmentFloorPos { position }
+        ThreeApartmentFloorPos{ position }
     }
     pub fn new_right(days_total: u8, days_left: u8) -> ThreeApartmentFloorPos {
         let position = CurrentFloorState
                        { floor_position: FloorPosition::Right
-                       , days_left
-                       , days_total: days_total - 1
+                       , day_state: DayState{ days_left, days_total: days_total - 1 }
                        };
         ThreeApartmentFloorPos { position }
     }
     fn is_max(&self) -> bool {
         let position = self.position;
         if FloorPosition::Right == position.floor_position 
-            && position.days_left == 0 {
+            && position.is_max() {
                 return true
         }
         false
     }
     fn min_value(&self) -> ThreeApartmentFloorPos {
         let position 
-            = CurrentFloorState 
-            { floor_position: FloorPosition::Left
-            , days_left: self.position.days_total
-            , days_total: self.position.days_total 
-            };
+            = CurrentFloorState::new(FloorPosition::Left, self.position.day_state.days_total);
             
-        ThreeApartmentFloorPos { position }
+        ThreeApartmentFloorPos{ position }
     }
-    fn max_value(&self) -> ThreeApartmentFloorPos {
-        let position 
-            = CurrentFloorState 
-            { floor_position: FloorPosition::Right
-            , days_left: 0
-            , days_total: self.position.days_total 
-            };
-            
-        ThreeApartmentFloorPos { position }
-    }
+
     fn next(&self, floor_info: &ThreeApartmentFloorInfo) -> ThreeApartmentFloorPos {
         let position = self.position;
-        if position.days_left == 0 {
-            let (next_floor_position, days_left, days_total) = match position.floor_position {
+        if position.is_max() {
+            let (next_floor_position, days_total) = match position.floor_position {
                 FloorPosition::Left => 
-                    (FloorPosition::Middle, floor_info.middle_days_total - 1, floor_info.middle_days_total - 1),
+                    (FloorPosition::Middle, floor_info.middle_days_total - 1),
                 FloorPosition::Middle => 
-                    (FloorPosition::Right, floor_info.right_days_total - 1, floor_info.right_days_total - 1),
+                    (FloorPosition::Right, floor_info.right_days_total - 1),
                 FloorPosition::Right => 
-                    (FloorPosition::Left, floor_info.left_days_total - 1, floor_info.left_days_total - 1)
+                    (FloorPosition::Left, floor_info.left_days_total - 1)
             };
-            let next_position = CurrentFloorState
-                                { floor_position: next_floor_position
-                                , days_left
-                                , days_total
-                                };
-            return ThreeApartmentFloorPos { position: next_position }
+            let next_position = CurrentFloorState::new(next_floor_position, days_total);
+            return ThreeApartmentFloorPos{ position: next_position }
         }
-        let next_position = CurrentFloorState
-                            { floor_position: position.floor_position
-                            , days_left: position.days_left - 1
-                            , days_total: position.days_total
-                            };
-        ThreeApartmentFloorPos { position: next_position }
+        let next_position = self.position.next();
+        ThreeApartmentFloorPos{ position: next_position }
     }
 
     fn print(&self) -> String {
@@ -271,7 +294,7 @@ impl ThreeApartmentFloorPos {
 
 #[derive(Copy, Clone, Debug)]
 pub enum Position {
-    SingleApartmentFloor,
+    SingleApartmentFloor(SingleApartmentFloorPos),
     TwoApartmentFloor(TwoApartmentFloorPos),
     ThreeApartmentFloor(ThreeApartmentFloorPos)
 }
@@ -279,7 +302,7 @@ pub enum Position {
 impl Position {
     fn next(&self, floor_info: &FloorInfo) -> Option<Position> {
         match self {
-            Position::SingleApartmentFloor => Some(Position::SingleApartmentFloor),
+            Position::SingleApartmentFloor(pos) => Some(Position::SingleApartmentFloor(pos.next())),
             Position::TwoApartmentFloor(pos) => {
                 if let FloorInfo::TwoApartments(info) = floor_info {
                     return Some(Position::TwoApartmentFloor(pos.next(info)))  
@@ -296,31 +319,15 @@ impl Position {
     }
     fn is_max(&self) -> bool {
         match self {
-            Position::SingleApartmentFloor => true,
+            Position::SingleApartmentFloor(pos) => pos.is_max(),
             Position::TwoApartmentFloor(pos) => pos.is_max(),
             Position::ThreeApartmentFloor(pos) => pos.is_max()
         }
     }
 
-    fn max_value(&self) -> Position {
-        match self {
-            Position::SingleApartmentFloor => Self::SingleApartmentFloor,
-            Position::TwoApartmentFloor(pos) => Self::TwoApartmentFloor(pos.max_value()),
-            Position::ThreeApartmentFloor(pos) => Self::ThreeApartmentFloor(pos.max_value())
-        }
-    }
-
-    fn min_value(&self) -> Position {
-        match self {
-            Position::SingleApartmentFloor => Self::SingleApartmentFloor,
-            Position::TwoApartmentFloor(pos) => Self::TwoApartmentFloor(pos.min_value()),
-            Position::ThreeApartmentFloor(pos) => Self::ThreeApartmentFloor(pos.min_value())
-        }
-    }
-
     fn print(&self) -> String {
         match self {
-            Position::SingleApartmentFloor => "".to_string(),
+            Position::SingleApartmentFloor(_) => "".to_string(),
             Position::TwoApartmentFloor(pos) => pos.print(),
             Position::ThreeApartmentFloor(pos) => pos.print(),
         }
@@ -406,7 +413,7 @@ impl Apartment {
 
     pub fn print(&self) -> String {
         match self.position {
-            Position::SingleApartmentFloor => self.floor.print(),
+            Position::SingleApartmentFloor(_) => self.floor.print(),
             _ => format!("{}. {}", self.floor.print(), self.position.print())
         }
     }
