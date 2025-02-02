@@ -1,6 +1,5 @@
-use datetime::{DatePiece, LocalDate, Month, Weekday, Year};
-use num_traits::AsPrimitive;
-use std::{collections::{BTreeMap, BTreeSet, HashMap}, error::Error, fmt::{self, Debug}, iter::Map};
+use datetime::{DatePiece, LocalDate, Month, Weekday};
+use std::{collections::{BTreeMap, HashMap}, error::Error, fmt::{self, Debug}};
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum FloorPosition {
@@ -41,10 +40,6 @@ impl DayState {
     fn is_max(&self) -> bool {
         0 == self.days_left
     }
-
-    fn is_min(&self) -> bool {
-        self.days_total == self.days_left
-    }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -67,10 +62,6 @@ impl CurrentFloorState {
 
     fn is_max(&self) -> bool {
         self.day_state.is_max()
-    }
-
-    fn is_min(&self) -> bool {
-        self.day_state.is_min()
     }
 
     fn print(&self) -> String {
@@ -165,10 +156,6 @@ impl SingleApartmentFloorPos {
     fn is_max(&self) -> bool {
         self.position.is_max()
     }
-
-    fn is_min(&self) -> bool {
-        self.position.is_min()
-    }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -198,12 +185,6 @@ impl TwoApartmentFloorPos {
                 return true
         }
         false
-    }
-    fn min_value(&self) -> TwoApartmentFloorPos {
-        let position 
-            = CurrentFloorState::new(FloorPosition::Left, self.position.day_state.days_total);
-            
-        TwoApartmentFloorPos { position }
     }
 
     fn next(&self, floor_info: &TwoApartmentFloorInfo) -> TwoApartmentFloorPos {
@@ -261,12 +242,6 @@ impl ThreeApartmentFloorPos {
                 return true
         }
         false
-    }
-    fn min_value(&self) -> ThreeApartmentFloorPos {
-        let position 
-            = CurrentFloorState::new(FloorPosition::Left, self.position.day_state.days_total);
-            
-        ThreeApartmentFloorPos{ position }
     }
 
     fn next(&self, floor_info: &ThreeApartmentFloorInfo) -> ThreeApartmentFloorPos {
@@ -344,7 +319,7 @@ struct Floor {
 impl Floor {
     pub fn next(&self) -> Floor {
         if self.is_max() {
-            let min = if (self.has_ground_floor) {
+            let min = if self.has_ground_floor {
                         0
                       } else {
                             1
@@ -434,10 +409,10 @@ impl ApartmentOfDay {
     }
 
     fn print_appartment(&self) -> String {
-        return match self {
+        match self {
             Self::CurrentApartment(app) => app.print(),
             Self::LastApartment(_, reason) => reason.to_owned()
-        };
+        }
     }
 }
 
@@ -476,7 +451,7 @@ impl Day {
         // This is safe b/c there is always at least one day per year
         
         let date = LocalDate::yd(year as i64, 1).unwrap();
-        let appartment = create_appartment_of_day(date, appartment, position_map, exclude_sunday, &holidays);
+        let appartment = create_appartment_of_day(date, appartment, position_map, exclude_sunday, holidays);
         Day { date, appartment }
     }
 
@@ -521,7 +496,7 @@ fn create_appartment_of_day(
             // keep a stale value if the current day is not used
             ApartmentOfDay::LastApartment(last_appartment, holiday_name.to_owned()),
         None => {
-            if (exclude_sunday && date.weekday() == Weekday::Sunday) {
+            if exclude_sunday && date.weekday() == Weekday::Sunday {
                 // keep a stale value if the current day is not used
                 ApartmentOfDay::LastApartment(last_appartment, "".to_owned())
             } else {
@@ -546,7 +521,7 @@ fn print_local_weekday(date: LocalDate) -> String {
 }
 
 pub fn month_to_string(month: Month) -> String {
-    return match month {
+    match month {
         datetime::Month::January => "Januar".to_owned(),
         datetime::Month::February => "Februar".to_owned(),
         datetime::Month::March => "März".to_owned(),
@@ -559,7 +534,7 @@ pub fn month_to_string(month: Month) -> String {
         datetime::Month::October => "Oktober".to_owned(),
         datetime::Month::November => "November".to_owned(),
         datetime::Month::December => "Dezember".to_owned()
-    };
+    }
 }
 
 fn print_local_date(date: LocalDate) -> String {
@@ -578,7 +553,7 @@ fn print_local_date(date: LocalDate) -> String {
         datetime::Month::November => "11",
         datetime::Month::December => "12"
     };
-    return [day, month.to_owned()].join(".");
+    [day, month.to_owned()].join(".")
 }
 
 // @key months from january

@@ -1,7 +1,5 @@
-#![allow(warnings)]
-use std::collections::{BTreeSet, HashMap};
-use datetime::LocalDate;
-use types::{create_full_year, Apartment, ApartmentInfo, Day, FloorInfo, Position, SingleApartmentFloorInfo, ThreeApartmentFloorInfo, ThreeApartmentFloorPos, TwoApartmentFloorInfo, TwoApartmentFloorPos, YearMap};
+use std::collections::HashMap;
+use types::{create_full_year, Apartment, ApartmentInfo, FloorInfo, SingleApartmentFloorInfo, ThreeApartmentFloorInfo, TwoApartmentFloorInfo};
 use tokio::runtime::Runtime;
 
 pub mod types;
@@ -34,7 +32,5 @@ fn main() {
         };
     let last_appartment = Apartment::new(appartment_info, &position_map).unwrap();
     let year_map = create_full_year(year, last_appartment, &position_map, exclude_sunday, &holidays);
-    html::create_year_html(&year_map);
-
-    println!("holidays = {holidays:?}");
+    html::create_year_html(&year_map).unwrap();
 }

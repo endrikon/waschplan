@@ -1,8 +1,8 @@
 use std::error::Error;
-use std::{fmt, fs::File};
+use std::fs::File;
 use std::io::Write;
 
-use datetime::{DatePiece, LocalDate, Month, Weekday, Year};
+use datetime::Month;
 use crate::types::{self, DayHTMLData, YearMap};
 use build_html::{self, Html, HtmlContainer, HtmlPage, Table, TableCell, TableCellType, TableRow};
 
@@ -16,17 +16,17 @@ fn create_row(day_data: &DayHTMLData) -> TableRow {
         .with_cell(appartment)
 }
 
-fn create_month_table(day_data: &Vec<DayHTMLData>) -> Table {
+fn create_month_table(day_data: &[DayHTMLData]) -> Table {
     day_data.iter().fold(Table::new(), |table, day_data| table.with_custom_body_row(create_row(day_data)))
 }
 
-fn create_month_row(row_data: &Vec<(&i8, &Vec<DayHTMLData>)>) 
+fn create_month_row(row_data: &[(&i8, &Vec<DayHTMLData>)]) 
     -> TableRow {
 
     assert!(row_data.len() == 3, "Wrong number of months");
 
     row_data.iter().fold(TableRow::new(), |row, (month, data)| {
-        let current_month = Month::from_zero(*month.clone()).unwrap();
+        let current_month = Month::from_zero(**month).unwrap();
         row.with_cell(TableCell::new(TableCellType::Data)
                             .with_table(create_month_table(data)
                                 .with_header_row(vec![types::month_to_string(current_month)])))
