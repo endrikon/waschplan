@@ -1,5 +1,24 @@
 use datetime::{DatePiece, LocalDate, Month, Weekday};
+use serde::{Deserialize, Serialize};
 use std::{collections::{BTreeMap, HashMap}, error::Error, fmt::{self, Debug}};
+
+#[derive(Deserialize, Serialize)]
+pub struct Config {
+    pub position_map: HashMap<u32, FloorInfo>
+}
+
+pub fn config_from_file<P>(path: P) -> Config 
+    where P: AsRef<std::path::Path> {
+    let file = std::fs::File::open(path).unwrap();
+    let reader = std::io::BufReader::new(file);
+    serde_json::from_reader(reader).expect("Possible to be parsed.")
+}
+
+pub fn save_config<P>(config: Config, path: P) -> std::io::Result<()>
+    where P: AsRef<std::path::Path> {
+    let content = serde_json::to_string_pretty(&config)?;
+    std::fs::write(path, content)
+}
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum FloorPosition {
@@ -69,25 +88,25 @@ impl CurrentFloorState {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct SingleApartmentFloorInfo {
     pub days_total: u8,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct TwoApartmentFloorInfo {
     pub left_days_total: u8,
     pub right_days_total: u8,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct ThreeApartmentFloorInfo {
     pub left_days_total: u8,
     pub middle_days_total: u8,
     pub right_days_total: u8,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum FloorInfo {
     OneApartment(SingleApartmentFloorInfo),
     TwoApartments(TwoApartmentFloorInfo),
@@ -443,7 +462,7 @@ impl fmt::Display for WrongYearError {
 
 impl Day {
     // @return first day of the year
-    pub fn new(year: u16, 
+    fn new(year: u16, 
            appartment: Apartment, 
            position_map: &HashMap<u32, FloorInfo>,
            exclude_sunday: bool,
@@ -562,18 +581,18 @@ fn print_local_date(date: LocalDate) -> String {
 pub struct YearMap(pub HashMap<i8, Vec<DayHTMLData>>);
 
 pub fn create_full_year(
+    config: &Config,
     year: u16, 
     last_appartment: Apartment, 
-    position_map: &HashMap<u32, FloorInfo>,
     exclude_sunday: bool, 
     holidays: &BTreeMap<LocalDate, String>) -> YearMap {
     let mut year_map = HashMap::new();
-    let mut current_day = Day::new(year, last_appartment, position_map, exclude_sunday, holidays);
+    let mut current_day = Day::new(year, last_appartment, &config.position_map, exclude_sunday, holidays);
 
     year_map.insert(current_day.date.month().months_from_january() as i8, 
                     vec![current_day.create_html_data()]);
 
-    while let Ok(valid_day) = current_day.next(position_map, exclude_sunday, holidays) {
+    while let Ok(valid_day) = current_day.next(&config.position_map, exclude_sunday, holidays) {
         let current_month = valid_day.date.month().months_from_january() as i8;
         if let Some(vector) = year_map.get_mut(&current_month) {
             vector.push(valid_day.create_html_data());
