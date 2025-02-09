@@ -17,7 +17,9 @@ fn create_row(day_data: &DayHTMLData) -> TableRow {
 }
 
 fn create_month_table(day_data: &[DayHTMLData]) -> Table {
-    day_data.iter().fold(Table::new(), |table, day_data| table.with_custom_body_row(create_row(day_data)))
+    day_data
+        .iter()
+        .fold(Table::new(), |table, day_data| table.with_custom_body_row(create_row(day_data)))
 }
 
 fn create_month_row(row_data: &[(&i8, &Vec<DayHTMLData>)]) 
@@ -27,9 +29,11 @@ fn create_month_row(row_data: &[(&i8, &Vec<DayHTMLData>)])
 
     row_data.iter().fold(TableRow::new(), |row, (month, data)| {
         let current_month = Month::from_zero(**month).unwrap();
-        row.with_cell(TableCell::new(TableCellType::Data)
-                            .with_table(create_month_table(data)
-                                .with_header_row(vec![types::month_to_string(current_month)])))
+        row.with_cell(
+                TableCell::new(TableCellType::Data)
+                .with_table(
+                    create_month_table(data)
+                        .with_header_row(vec![types::month_to_string(current_month)])))
     })
 }
 
@@ -47,7 +51,9 @@ pub fn create_year_html(config: &types::Config, year_map: &YearMap) -> Result<()
     let table = month_triples
         .iter()
         .fold(Table::new()
-            .with_caption(config.title.clone()), |table, triple| table.with_custom_body_row(create_month_row(triple)));
+            .with_caption(
+                config.title.clone()),
+                |table, triple| table.with_custom_body_row(create_month_row(triple)));
     let page = HtmlPage::new()
         .with_title(config.title.clone())
         .with_table(table)

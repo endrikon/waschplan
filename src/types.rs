@@ -21,7 +21,8 @@ impl fmt::Display for ValidationError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::FloorInfoError(err) => fmt::Display::fmt(err, f),
-            Self::FloorSkipped(floor) => write!(f, "Invalid config! Floor {} was skipped in the config.", floor),
+            Self::FloorSkipped(floor) => 
+                write!(f, "Invalid config! Floor {} was skipped in the config.", floor),
             Self::FormatError(err) => fmt::Display::fmt(err, f)
         }
     }
@@ -144,7 +145,8 @@ impl Error for FloorInfoError{}
 
 impl fmt::Display for FloorInfoError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Invalid FloorInfo for floor: {}, position: {:?}. Each apartment needs to have at least one day.",
+        write!(f, "Invalid FloorInfo for floor: {}, \
+                   position: {:?}. Each apartment needs to have at least one day.",
                self.floor, self.position)
     }
 }
@@ -223,15 +225,23 @@ impl FloorInfo {
 fn initial_appartment_position(floor_info: &FloorInfo) -> Position {
     match floor_info {
         FloorInfo::OneApartment(info) => 
-            Position::SingleApartmentFloor(SingleApartmentFloorPos::new(info.days_total, info.days_total - 1)),
+            Position::SingleApartmentFloor(
+                SingleApartmentFloorPos::new(info.days_total,
+                                             info.days_total - 1)),
         FloorInfo::TwoApartments(info) => 
-            Position::TwoApartmentFloor(TwoApartmentFloorPos::new_left(info.left_days_total, info.left_days_total - 1)),
+            Position::TwoApartmentFloor(
+                TwoApartmentFloorPos::new_left(info.left_days_total,
+                                               info.left_days_total - 1)),
         FloorInfo::ThreeApartments(info) => 
-            Position::ThreeApartmentFloor(ThreeApartmentFloorPos::new_left(info.left_days_total, info.left_days_total - 1))
+            Position::ThreeApartmentFloor(
+                ThreeApartmentFloorPos::new_left(info.left_days_total,
+                                                 info.left_days_total - 1))
     }   
 }
 
-fn create_position(floor_info: &FloorInfo, floor_position: &FloorPosition, days_left: u8) -> Option<Position> {
+fn create_position(floor_info: &FloorInfo,
+                   floor_position: &FloorPosition,
+                   days_left: u8) -> Option<Position> {
     match floor_info {
         FloorInfo::OneApartment(info) => {
             let position = SingleApartmentFloorPos::new(info.days_total, days_left);
@@ -254,11 +264,13 @@ fn create_position(floor_info: &FloorInfo, floor_position: &FloorPosition, days_
                 Some(Position::ThreeApartmentFloor(position))
             },
             FloorPosition::Middle => {
-                let position = ThreeApartmentFloorPos::new_middle(info.middle_days_total, days_left);
+                let position =
+                        ThreeApartmentFloorPos::new_middle(info.middle_days_total, days_left);
                 Some(Position::ThreeApartmentFloor(position))
             },
             FloorPosition::Right => {
-                let position = ThreeApartmentFloorPos::new_right(info.right_days_total, days_left);
+                let position =
+                        ThreeApartmentFloorPos::new_right(info.right_days_total, days_left);
                 Some(Position::ThreeApartmentFloor(position))
             },
         }
@@ -597,7 +609,10 @@ impl Day {
         Day { date, appartment }
     }
 
-    pub fn next(&self, position_map: &HashMap<u32, FloorInfo>, exclude_sunday: bool, holidays: &BTreeMap<LocalDate, String>) -> Result<Day, Box<dyn Error>> {
+    pub fn next(&self,
+                position_map: &HashMap<u32, FloorInfo>,
+                exclude_sunday: bool, holidays: &BTreeMap<LocalDate, String>)
+                -> Result<Day, Box<dyn Error>> {
 
         let current_year = self.date.year();
         let date = LocalDate::yd(current_year, self.date.yearday() as i64 + 1)?;
@@ -608,13 +623,17 @@ impl Day {
         }
 
         let app = self.appartment.extract_appartment().clone();
-        let appartment = create_appartment_of_day(date, app, position_map, exclude_sunday, holidays);
+        let appartment =
+                create_appartment_of_day(date, app, position_map, exclude_sunday, holidays);
 
         Ok(Day { date, appartment })
     }
 
     pub fn print(&self) -> String {
-        [print_local_date(self.date), print_local_weekday(self.date), self.appartment.print_appartment()].join(" ")
+        [ print_local_date(self.date)
+        , print_local_weekday(self.date)
+        , self.appartment.print_appartment()
+        ].join(" ")
     }
 
     pub fn create_html_data(&self) -> DayHTMLData {
@@ -710,7 +729,8 @@ pub fn create_full_year(
     exclude_sunday: bool, 
     holidays: &BTreeMap<LocalDate, String>) -> YearMap {
     let mut year_map = HashMap::new();
-    let mut current_day = Day::new(year, last_appartment, &config.position_map, exclude_sunday, holidays);
+    let mut current_day = 
+                Day::new(year, last_appartment, &config.position_map, exclude_sunday, holidays);
 
     year_map.insert(current_day.date.month().months_from_january() as i8, 
                     vec![current_day.create_html_data()]);
