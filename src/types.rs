@@ -2,7 +2,7 @@ use datetime::{DatePiece, LocalDate, Month, Weekday};
 use serde::{Deserialize, Serialize};
 use std::{collections::{BTreeMap, HashMap}, error::Error, fmt::{self, Debug}};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Config {
     pub position_map: HashMap<u32, FloorInfo>,
     pub title: String
@@ -12,7 +12,8 @@ pub struct Config {
 pub enum ValidationError {
     FloorInfoError(FloorInfoError),
     FloorSkipped(u32),
-    FormatError(serde_json::Error)
+    FormatError(serde_json::Error),
+    ApartmentError(ApartmentInfoError)
 }
 
 impl Error for ValidationError{}
@@ -23,7 +24,8 @@ impl fmt::Display for ValidationError {
             Self::FloorInfoError(err) => fmt::Display::fmt(err, f),
             Self::FloorSkipped(floor) => 
                 write!(f, "Invalid config! Floor {} was skipped in the config.", floor),
-            Self::FormatError(err) => fmt::Display::fmt(err, f)
+            Self::FormatError(err) => fmt::Display::fmt(err, f),
+            Self::ApartmentError(err) => fmt::Display::fmt(err, f)
         }
     }
 }
@@ -163,6 +165,9 @@ impl SingleApartmentFloorInfo {
         }
         Ok(())
     }
+    fn get_total_days(&self, _floor_position: &FloorPosition) -> u8 {
+        self.days_total
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
@@ -180,6 +185,14 @@ impl TwoApartmentFloorInfo {
             return Err(FloorInfoError { floor, position: Some(FloorPosition::Right)});
         }
         Ok(())
+    }
+    fn get_total_days(&self, floor_position: &FloorPosition) -> u8 {
+        match floor_position {
+            FloorPosition::Left => self.left_days_total,
+            FloorPosition::Right => self.right_days_total,
+            // should not happen
+            FloorPosition::Middle => 0
+        }
     }
 }
 
@@ -203,6 +216,14 @@ impl ThreeApartmentFloorInfo {
         }
         Ok(())
     }
+
+    fn get_total_days(&self, floor_position: &FloorPosition) -> u8 {
+        match floor_position {
+            FloorPosition::Left => self.left_days_total,
+            FloorPosition::Middle => self.middle_days_total,
+            FloorPosition::Right => self.right_days_total
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
@@ -218,6 +239,14 @@ impl FloorInfo {
             FloorInfo::OneApartment(ap) => ap.validate(floor),
             FloorInfo::TwoApartments(ap) => ap.validate(floor),
             FloorInfo::ThreeApartments(ap) => ap.validate(floor)
+        }
+    }
+    // TODO: find a cleaner way than supplying a position for one apartment homes
+    fn get_total_days(&self, floor_position: &FloorPosition) -> u8 {
+        match self {
+            FloorInfo::OneApartment(ap) => ap.get_total_days(floor_position),
+            FloorInfo::TwoApartments(ap) => ap.get_total_days(floor_position),
+            FloorInfo::ThreeApartments(ap) => ap.get_total_days(floor_position)
         }
     }
 }
@@ -241,37 +270,40 @@ fn initial_appartment_position(floor_info: &FloorInfo) -> Position {
 
 fn create_position(floor_info: &FloorInfo,
                    floor_position: &FloorPosition,
-                   days_left: u8) -> Option<Position> {
+                   floor: u32,
+                   days_left: u8) -> Result<Position, ValidationError> {
     match floor_info {
         FloorInfo::OneApartment(info) => {
             let position = SingleApartmentFloorPos::new(info.days_total, days_left);
-            Some(Position::SingleApartmentFloor(position))
+            Ok(Position::SingleApartmentFloor(position))
         },
         FloorInfo::TwoApartments(info) => match floor_position {
             FloorPosition::Left => {
                 let position = TwoApartmentFloorPos::new_left(info.left_days_total, days_left);
-                Some(Position::TwoApartmentFloor(position))
+                Ok(Position::TwoApartmentFloor(position))
             },
             FloorPosition::Right => {
                 let position = TwoApartmentFloorPos::new_right(info.right_days_total, days_left);
-                Some(Position::TwoApartmentFloor(position))
+                Ok(Position::TwoApartmentFloor(position))
             },
-            FloorPosition::Middle => None
+            FloorPosition::Middle => 
+                Err(ValidationError::ApartmentError(
+                    ApartmentInfoError::PositionFloorMismatch(*floor_position, floor)))
         }
         FloorInfo::ThreeApartments(info) => match floor_position {
             FloorPosition::Left => {
                 let position = ThreeApartmentFloorPos::new_left(info.left_days_total, days_left);
-                Some(Position::ThreeApartmentFloor(position))
+                Ok(Position::ThreeApartmentFloor(position))
             },
             FloorPosition::Middle => {
                 let position =
                         ThreeApartmentFloorPos::new_middle(info.middle_days_total, days_left);
-                Some(Position::ThreeApartmentFloor(position))
+                Ok(Position::ThreeApartmentFloor(position))
             },
             FloorPosition::Right => {
                 let position =
                         ThreeApartmentFloorPos::new_right(info.right_days_total, days_left);
-                Some(Position::ThreeApartmentFloor(position))
+                Ok(Position::ThreeApartmentFloor(position))
             },
         }
     }
@@ -484,41 +516,84 @@ pub struct Apartment {
     position: Position,
 }
 
+#[derive(Debug)]
+pub enum ApartmentInfoError {
+    TooHighCurrentFloor(u32, u32),
+    TooManyDaysLeft(u8, u8),
+    PositionFloorMismatch(FloorPosition, u32),
+    MissingFloor
+}
+
+impl Error for ApartmentInfoError{}
+
+impl fmt::Display for ApartmentInfoError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::TooHighCurrentFloor(current, max) =>
+                write!(f, "Current floor is {} but highest floor is {}.", current, max),
+            Self::TooManyDaysLeft(left, max) =>
+                write!(f, "This apartment has maximum {} days but {} are left.", max, left),
+            Self::PositionFloorMismatch(position, floor) =>
+                write!(f, "Position {:?} doesn't exist on floor {}.", position, floor),
+            Self::MissingFloor =>
+                write!(f, "The impossible happened!")
+        }
+    }
+}
+
 pub struct ApartmentInfo {
-    current_floor: u32,
-    max_floor: u32,
-    position: FloorPosition,
-    days_left: u8
+    pub current_floor: u32,
+    pub position: FloorPosition,
+    pub days_left: u8
 }
 
 impl ApartmentInfo {
-    pub fn new(config: &Config,
-               current_floor: u32,
-               position: FloorPosition,
-               days_left: u8) -> Option<ApartmentInfo> {
+    pub fn validate(&self, config: &Config) -> Result<(), ValidationError> {
         let mut sorted_keys: Vec<&u32> = config.position_map.keys().collect();
         sorted_keys.sort_unstable();
         // NOTE: the initial config check ensures that the config isn't empty
         let max_floor = **sorted_keys.last().unwrap();
-        if current_floor > max_floor {
-            return None;
+        if self.current_floor > max_floor {
+            return Err(
+                ValidationError::ApartmentError(
+                    ApartmentInfoError::TooHighCurrentFloor(self.current_floor, max_floor)));
         }
-        Some(ApartmentInfo { current_floor, max_floor , position , days_left })
+        match config.position_map.get(&self.current_floor) {
+            Some(floor_info) => {
+                let total_days = floor_info.get_total_days(&self.position);
+                if total_days < self.days_left {
+                    return Err(
+                        ValidationError::ApartmentError(
+                            ApartmentInfoError::TooManyDaysLeft(self.days_left, total_days)));
+                }
+                Ok(())
+            }
+            None => Err(ValidationError::ApartmentError(ApartmentInfoError::MissingFloor))
+        }
     }
 }
 
 impl Apartment {
-    pub fn new(appartment_info: ApartmentInfo,
-               position_map: &HashMap<u32, FloorInfo>) -> Option<Apartment> {
+    pub fn new(config: &Config,
+               apartment_info: &ApartmentInfo,
+               position_map: &HashMap<u32, FloorInfo>) -> Result<Apartment, ValidationError> {
+        apartment_info.validate(config)?;
+        let max_floor = (config.position_map.len() - 1) as u32;
         let floor 
             = Floor
-            { floor: appartment_info.current_floor
-            , max: appartment_info.max_floor
+            { floor: apartment_info.current_floor
+            , max: max_floor
             , has_ground_floor: position_map.contains_key(&0)
             };
-        let info = position_map.get(&floor.floor)?;
-        let position = create_position(info, &appartment_info.position, appartment_info.days_left)?;
-        Some(Apartment{ floor, position })
+        // NOTE: safe b/c the config have been validated
+        let info = position_map.get(&floor.floor).unwrap();
+        let position = 
+                create_position(
+                    info,
+                    &apartment_info.position,
+                    apartment_info.current_floor,
+                    apartment_info.days_left)?;
+        Ok(Apartment{ floor, position })
     }
 
     pub fn next(&self, position_map: &HashMap<u32, FloorInfo>) -> Apartment {
