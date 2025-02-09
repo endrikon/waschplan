@@ -7,11 +7,56 @@ pub struct Config {
     pub position_map: HashMap<u32, FloorInfo>
 }
 
-pub fn config_from_file<P>(path: P) -> Config 
+#[derive(Debug)]
+pub enum ValidationError {
+    FloorInfoError(FloorInfoError),
+    FloorSkipped(u32),
+    FormatError(serde_json::Error)
+}
+
+impl Error for ValidationError{}
+
+impl fmt::Display for ValidationError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::FloorInfoError(err) => fmt::Display::fmt(err, f),
+            Self::FloorSkipped(floor) => write!(f, "Invalid config! Floor {} was skipped in the config.", floor),
+            Self::FormatError(err) => fmt::Display::fmt(err, f)
+        }
+    }
+}
+
+fn validate_config(cfg: &Config) -> Result<(), ValidationError> {
+    let position_map = &cfg.position_map;
+    let mut i;
+    if position_map.contains_key(&0) {
+        i = 0;
+    } else {
+        i = 1;
+    }
+    for (floor, value) in position_map.iter() {
+        if !position_map.contains_key(&i) {
+            return Err(ValidationError::FloorSkipped(i));
+        }
+        i += 1;
+
+        if let Err(err) = value.validate(*floor) {
+            return Err(ValidationError::FloorInfoError(err));
+        }
+    }
+    Ok(())
+}
+
+pub fn config_from_file<P>(path: P) -> Result<Config, ValidationError>
     where P: AsRef<std::path::Path> {
     let file = std::fs::File::open(path).unwrap();
     let reader = std::io::BufReader::new(file);
-    serde_json::from_reader(reader).expect("Possible to be parsed.")
+    let config = match serde_json::from_reader(reader) {
+        Ok(cfg) => cfg,
+        Err(err) => return Err(ValidationError::FormatError(err)) 
+    };
+    validate_config(&config)?;
+    Ok(config)
 }
 
 pub fn save_config<P>(config: Config, path: P) -> std::io::Result<()>
@@ -88,15 +133,51 @@ impl CurrentFloorState {
     }
 }
 
+#[derive(Debug)]
+pub struct FloorInfoError {
+    floor: u32,
+    position: Option<FloorPosition>
+}
+
+impl Error for FloorInfoError{}
+
+impl fmt::Display for FloorInfoError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Invalid FloorInfo for floor: {}, position: {:?}. Each apartment needs to have at least one day.",
+               self.floor, self.position)
+    }
+}
+
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct SingleApartmentFloorInfo {
     pub days_total: u8,
+}
+
+impl SingleApartmentFloorInfo {
+    fn validate(&self, floor: u32) -> Result<(), FloorInfoError> {
+        if self.days_total == 0 {
+            return Err(FloorInfoError { floor, position: None });
+        }
+        Ok(())
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct TwoApartmentFloorInfo {
     pub left_days_total: u8,
     pub right_days_total: u8,
+}
+
+impl TwoApartmentFloorInfo {
+    fn validate(&self, floor: u32) -> Result<(), FloorInfoError> {
+        if self.left_days_total == 0 {
+            return Err(FloorInfoError { floor, position: Some(FloorPosition::Left)});
+        }
+        if self.right_days_total == 0 {
+            return Err(FloorInfoError { floor, position: Some(FloorPosition::Right)});
+        }
+        Ok(())
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
@@ -106,11 +187,36 @@ pub struct ThreeApartmentFloorInfo {
     pub right_days_total: u8,
 }
 
+impl ThreeApartmentFloorInfo {
+    fn validate(&self, floor: u32) -> Result<(), FloorInfoError> {
+        if self.left_days_total == 0 {
+            return Err(FloorInfoError { floor, position: Some(FloorPosition::Left)});
+        }
+        if self.middle_days_total == 0 {
+            return Err(FloorInfoError { floor, position: Some(FloorPosition::Middle)});
+        }
+        if self.right_days_total == 0 {
+            return Err(FloorInfoError { floor, position: Some(FloorPosition::Right)});
+        }
+        Ok(())
+    }
+}
+
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum FloorInfo {
     OneApartment(SingleApartmentFloorInfo),
     TwoApartments(TwoApartmentFloorInfo),
     ThreeApartments(ThreeApartmentFloorInfo)
+}
+
+impl FloorInfo {
+    fn validate(&self, floor: u32) -> Result<(), FloorInfoError> {
+        match self {
+            FloorInfo::OneApartment(ap) => ap.validate(floor),
+            FloorInfo::TwoApartments(ap) => ap.validate(floor),
+            FloorInfo::ThreeApartments(ap) => ap.validate(floor)
+        }
+    }
 }
 
 fn initial_appartment_position(floor_info: &FloorInfo) -> Position {
@@ -366,10 +472,26 @@ pub struct Apartment {
 }
 
 pub struct ApartmentInfo {
-    pub current_floor: u32,
-    pub max_floor: u32,
-    pub position: FloorPosition,
-    pub days_left: u8
+    current_floor: u32,
+    max_floor: u32,
+    position: FloorPosition,
+    days_left: u8
+}
+
+impl ApartmentInfo {
+    pub fn new(config: &Config,
+               current_floor: u32,
+               position: FloorPosition,
+               days_left: u8) -> Option<ApartmentInfo> {
+        let mut sorted_keys: Vec<&u32> = config.position_map.keys().collect();
+        sorted_keys.sort_unstable();
+        // NOTE: the initial config check ensures that the config isn't empty
+        let max_floor = **sorted_keys.last().unwrap();
+        if current_floor > max_floor {
+            return None;
+        }
+        Some(ApartmentInfo { current_floor, max_floor , position , days_left })
+    }
 }
 
 impl Apartment {
@@ -389,11 +511,11 @@ impl Apartment {
     pub fn next(&self, position_map: &HashMap<u32, FloorInfo>) -> Apartment {
         if self.position.is_max() {
             let next_floor = self.floor.next();
+            // NOTE: The number of floors always matches the data in the position_map.
+            // This is checked in the config validation.
             let floor_info = position_map.get(&next_floor.floor).unwrap();
             Apartment 
             { floor: next_floor
-            //TODO: unwrap can fail here if the hashmap doesn't have enough elements
-            // find a way to make sure that the number of elements is equal to number of floors
             , position: initial_appartment_position(floor_info)
             }
         } else {
