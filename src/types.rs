@@ -4,7 +4,8 @@ use std::{collections::{BTreeMap, HashMap}, error::Error, fmt::{self, Debug}};
 
 #[derive(Deserialize, Serialize)]
 pub struct Config {
-    pub position_map: HashMap<u32, FloorInfo>
+    pub position_map: HashMap<u32, FloorInfo>,
+    pub title: String
 }
 
 #[derive(Debug)]

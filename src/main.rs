@@ -18,7 +18,7 @@ fn main() {
             let last_appartment = types::Apartment::new(appartment_info, &config.position_map).unwrap();
             let year_map = types::create_full_year(&config, year, last_appartment, exclude_sunday, &holidays);
 
-            html::create_year_html(&year_map).unwrap();
+            html::create_year_html(&config, &year_map).unwrap();
         }
         Err(err) => println!("Error: {}", err)
     }

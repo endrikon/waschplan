@@ -33,7 +33,7 @@ fn create_month_row(row_data: &[(&i8, &Vec<DayHTMLData>)])
     })
 }
 
-pub fn create_year_html(year_map: &YearMap) -> Result<(), Box<dyn Error>> {
+pub fn create_year_html(config: &types::Config, year_map: &YearMap) -> Result<(), Box<dyn Error>> {
     let path = "year_html.html";
     let mut output = File::create(path)?;
     let YearMap(map) = year_map;
@@ -47,9 +47,9 @@ pub fn create_year_html(year_map: &YearMap) -> Result<(), Box<dyn Error>> {
     let table = month_triples
         .iter()
         .fold(Table::new()
-            .with_caption("Year"), |table, triple| table.with_custom_body_row(create_month_row(triple)));
+            .with_caption(config.title.clone()), |table, triple| table.with_custom_body_row(create_month_row(triple)));
     let page = HtmlPage::new()
-        .with_title("Year")
+        .with_title(config.title.clone())
         .with_table(table)
         .to_html_string();
     write!(output, "{}", page).map_err(|err| Box::new(err) as _)
