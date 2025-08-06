@@ -1,5 +1,4 @@
-/target/
-*.html
+**/target/
 # Devenv
 .devenv*
 devenv.local.nix

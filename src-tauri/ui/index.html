@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" href="/assets/bulma.min.css" />
+  </head>
+  <body>
+    <section class="section">
+      <div class="container">
+        <div class="columns">
+          <div class="column is-half" id="floors">
+            <div class="columns" id="modifyRows">
+              <div class="column is-half">
+                <button class="button is-primary is-fullwidth" id="addRow">
+                  +
+                </button>
+              </div>
+              <div class="column is-half">
+                <button
+                  class="button is-danger is-fullwidth"
+                  id="removeRow"
+                  disabled="true"
+                >
+                  -
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="column is-half">
+            <div class="checkboxes">
+              <label class="checkbox is-size-4">
+                <input type="checkbox" id="withParterre" checked />
+                Parterre
+              </label>
+              <label class="checkbox is-size-4">
+                <input type="checkbox" id="sunday" />
+                Sonntag
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script src="app.js"></script>
+  </body>
+</html>
