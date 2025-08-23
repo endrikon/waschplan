@@ -4,8 +4,40 @@ const modifyRows = document.querySelector("#modifyRows");
 const addRow = modifyRows.querySelector("#addRow");
 const removeRow = modifyRows.querySelector("#removeRow");
 const floors = document.querySelector("#floors");
+const floorSelector = document.querySelector("#lastFloor");
+const positionSelector = document.querySelector("#lastPosition");
+const daySelector = document.querySelector("#lastLaundryDay");
 
-makeRow = (rowNum, colNum) => {
+function getPositionToClassMap(colNum) {
+  switch (colNum) {
+    case 1:
+      return { 0: 'middle' };
+    case 2:
+      return {
+        0: 'left',
+        1: 'right'
+      };
+    case 3:
+      return {
+        0: 'left',
+        1: 'middle',
+        2: 'right'
+      }
+    // impossible
+    default:
+      return {};
+  }
+}
+
+function makeFloorSelector(row) {
+  const opt = document.createElement('option');
+  var rowNum = row;
+  opt.value = rowNum;
+  opt.innerText = row;
+  return opt;
+}
+
+function makeRow(rowNum, colNum) {
   const selector = document.createElement('select')
   for (let i = 1; i < 4; i++) {
     const opt = document.createElement('option');
@@ -53,9 +85,14 @@ makeRow = (rowNum, colNum) => {
 
   const row = document.createElement('div');
   row.classList.add('columns');
+  row.id = `floor-${rowNum}`;
   row.appendChild(numCol);
   for (let i = 0; i < colNum; i++) {
-    row.appendChild(selectorCol.cloneNode(true));
+    const classMap = getPositionToClassMap(colNum);
+    const newSelectorCol = selectorCol.cloneNode(true);
+    const selector = newSelectorCol.getElementsByTagName('select')[0];
+    selector.classList.add(classMap[i]);
+    row.appendChild(newSelectorCol);
   }
 
   // cleaner solution would be to add only one column
@@ -68,12 +105,18 @@ makeRow = (rowNum, colNum) => {
   row.appendChild(removeColColumn);
   row.classList.add(`row-of-${colNum}`);
 
+  if (colNum === 1) {
+    const removeBtn = row.querySelector('.removeColBtn');
+    removeBtn.disabled = true;
+  } else if (colNum === 3) {
+    const addBtn = row.querySelector('.addColBtn');
+    addBtn.disabled = true;
+  }
+
   return row;
 }
 
 const parterreRow = makeRow('P', 1);
-const removeBtn = parterreRow.querySelector('.removeColBtn');
-removeBtn.disabled = true;
 modifyRows.before(parterreRow);
 
 addRow.addEventListener('click', () => {
@@ -82,14 +125,18 @@ addRow.addEventListener('click', () => {
   var newRow;
   var row = newElement.firstElementChild.childNodes[0].textContent;
   if (row === 'P') {
-    newRow = '1';
+    newRow = 1;
   } else {
     const rowNum = parseInt(row);
     newRow = rowNum + 1;
   }
   newElement.firstElementChild.childNodes[0].textContent = newRow;
+  newElement.id = `floor-${newRow}`;
 
   lastElement.after(newElement);
+
+  const newFloorOpt = makeFloorSelector(newRow);
+  floorSelector.appendChild(newFloorOpt);
 
   enableDisableRemoveRows();
 })
@@ -99,6 +146,8 @@ removeRow.addEventListener('click', () => {
   if (lastElement.previousElementSibling !== null) {
     lastElement.remove();
   }
+
+  floorSelector.lastChild.remove();
   enableDisableRemoveRows();
 })
 
@@ -108,18 +157,21 @@ document.addEventListener('click', (e) => {
   if (target) {
     const btn = target.parentElement;
     const parent = btn.parentElement;
+
+    const rowNum = parent.firstElementChild.childNodes[0].textContent;
+    removePositionIfSelected(rowNum);
+
     if (parent.classList.contains('row-of-2')) {
-      const rowNum = parent.firstElementChild.childNodes[0].textContent;
       const newElement = makeRow(rowNum, 1);
       const removeBtn = newElement.querySelector('.removeColBtn');
       removeBtn.disabled = true;
       parent.replaceWith(newElement);
     }
     if (parent.classList.contains('row-of-3')) {
-      const rowNum = parent.firstElementChild.childNodes[0].textContent;
       const newElement = makeRow(rowNum, 2);
       parent.replaceWith(newElement);
     }
+    adjustPositions()
   }
 })
 
@@ -129,31 +181,60 @@ document.addEventListener('click', (e) => {
   if (target) {
     const btn = target.parentElement;
     const parent = btn.parentElement;
+
+    const rowNum = parent.firstElementChild.childNodes[0].textContent;
+    removePositionIfSelected(rowNum);
+
     if (parent.classList.contains('row-of-2')) {
-      const rowNum = parent.firstElementChild.childNodes[0].textContent;
       const newElement = makeRow(rowNum, 3);
       const addBtn = newElement.querySelector('.addColBtn');
       addBtn.disabled = true;
       parent.replaceWith(newElement);
     }
     if (parent.classList.contains('row-of-1')) {
-      const rowNum = parent.firstElementChild.childNodes[0].textContent;
       const newElement = makeRow(rowNum, 2);
       parent.replaceWith(newElement);
     }
+    adjustPositions()
   }
 })
 
 const parterreCheckbox = document.querySelector('#withParterre');
 parterreCheckbox.addEventListener('click', (e) => {
   const checkBox = e.target;
+
   if (checkBox.checked) {
+
     floors.prepend(parterreRow);
+    const newFloorOpt = makeFloorSelector('P');
+    floorSelector.children[0].after(newFloorOpt);
+    enableDisableRemoveRows();
+
   } else {
+
+    if (floorSelector.value === 'P') {
+      floorSelector.value = '';
+      positionSelector.value = '';
+      daySelector.value = '';
+    }
+
     const parterreFloor = floors.firstElementChild;
-    parterreFloor.remove();
+    const parterreSibling = parterreFloor.nextElementSibling;
+    floorSelector.children[1].remove();
+
+    if (parterreSibling.id !== 'floor-1') {
+
+      const floor1 = makeRow('1', 1);
+      parterreFloor.replaceWith(floor1);
+
+      const newFloorOpt = makeFloorSelector('1');
+      floorSelector.children[0].after(newFloorOpt);
+    } else {
+      parterreFloor.remove();
+    }
+    enableDisableRemoveRows();
   }
-  console.log(e.target);
+  adjustPositions()
 })
 
 enableDisableRemoveRows = () => {
@@ -164,3 +245,106 @@ enableDisableRemoveRows = () => {
     removeRow.disabled = true;
   }
 }
+
+function addPositions(floorType) {
+  switch (floorType) {
+    case 'row-of-1':
+      const opt1 = document.createElement('option');
+      opt1.value = 'middle';
+      opt1.innerText = 'Einzelzimmer';
+      positionSelector.append(opt1);
+      break;
+    case 'row-of-2':
+      const optLeft2 = document.createElement('option');
+      optLeft2.value = 'left';
+      optLeft2.innerText = 'Links';
+      positionSelector.append(optLeft2);
+
+      const optRight2 = document.createElement('option');
+      optRight2.value = 'right';
+      optRight2.innerText = 'Rechts';
+      positionSelector.append(optRight2);
+      break;
+
+    case 'row-of-3':
+      const optLeft3 = document.createElement('option');
+      optLeft3.value = 'left';
+      optLeft3.innerText = 'Links';
+      positionSelector.append(optLeft3);
+
+      const optMiddle3 = document.createElement('option');
+      optMiddle3.value = 'middle';
+      optMiddle3.innerText = 'Mitte';
+      positionSelector.append(optMiddle3);
+
+      const optRight3 = document.createElement('option');
+      optRight3.value = 'right';
+      optRight3.innerText = 'Rechts';
+      positionSelector.append(optRight3);
+      break;
+
+    default:
+      break;
+  }
+}
+
+function removePositionIfSelected(rowNum) {
+  const currentRow = floorSelector.value;
+  if (rowNum === currentRow) {
+    positionSelector.value = '';
+    daySelector.value = '';
+  }
+}
+
+function adjustPositions() {
+  const rowNum = floorSelector.value;
+  const relevantRow = document.querySelector(`#floor-${rowNum}`);
+
+  // don't do anything if it's the disabled field.
+  if (rowNum !== "") {
+    const regex = RegExp('row-of-');
+
+    const classNames = relevantRow.className.split(' ');
+    const apartmentsPerFloor = classNames.filter(item => regex.test(item))[0];
+
+    Array.from(positionSelector.children).slice(1).forEach(item => item.remove());
+    addPositions(apartmentsPerFloor)
+  }
+}
+
+floorSelector.addEventListener('change', () => {
+  adjustPositions()
+  positionSelector.value = '';
+  daySelector.value = '';
+});
+
+function adjustAndReturnDaySelector() {
+  daySelector.value = '';
+
+  const rowNum = floorSelector.value;
+  const position = positionSelector.value;
+  const relevantRow = document.querySelector(`#floor-${rowNum}`);
+  const totalDaysSelector = relevantRow.querySelector(`.${position}`);
+
+  Array.from(daySelector.children).slice(1).forEach(item => item.remove());
+
+  for (let i = 1; i <= parseInt(totalDaysSelector.value); i++) {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.innerText = i;
+    daySelector.append(opt);
+  }
+
+  return totalDaysSelector;
+}
+
+var relevantDaySelector;
+
+positionSelector.addEventListener('change', () => {
+  if (relevantDaySelector) {
+    relevantDaySelector.removeEventListener('change', adjustAndReturnDaySelector);
+  }
+  relevantDaySelector = adjustAndReturnDaySelector();
+
+  relevantDaySelector.addEventListener('change', adjustAndReturnDaySelector);
+});

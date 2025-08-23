@@ -1,6 +1,7 @@
 <!doctype html>
 <html>
   <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <link rel="stylesheet" href="/assets/bulma.min.css" />
   </head>
   <body>
@@ -26,15 +27,49 @@
             </div>
           </div>
           <div class="column is-half">
-            <div class="checkboxes">
-              <label class="checkbox is-size-4">
-                <input type="checkbox" id="withParterre" checked />
-                Parterre
-              </label>
-              <label class="checkbox is-size-4">
-                <input type="checkbox" id="sunday" />
-                Sonntag
-              </label>
+            <div class="columns">
+              <div class="column is-full">
+                <div class="checkboxes">
+                  <label class="checkbox is-size-4">
+                    <input type="checkbox" id="withParterre" checked />
+                    Parterre
+                  </label>
+                  <label class="checkbox is-size-4">
+                    <input type="checkbox" id="sunday" />
+                    Sonntag
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="columns">
+              <div class="column is-one-third">
+                <div class="select">
+                  <select id="lastFloor">
+                    <option value="" disabled selected>
+                      Stockwerk auswählen
+                    </option>
+                    <option value="P">P</option>
+                  </select>
+                </div>
+              </div>
+              <div class="column is-one-third">
+                <div class="select">
+                  <select id="lastPosition">
+                    <option value="" disabled selected>
+                      Position auswählen
+                    </option>
+                  </select>
+                </div>
+              </div>
+              <div class="column is-one-third">
+                <div class="select">
+                  <select id="lastLaundryDay">
+                    <option value="" disabled selected>
+                      Waschtag auswählen
+                    </option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
         </div>
