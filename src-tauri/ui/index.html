@@ -3,6 +3,7 @@
   <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <link rel="stylesheet" href="/assets/bulma.min.css" />
+    <link href="/assets/bulma-calendar.min.css" rel="stylesheet" />
   </head>
   <body>
     <section class="section">
@@ -71,11 +72,34 @@
                 </div>
               </div>
             </div>
+            <div class="column is-size-3">
+              <b>Feiertage</b>
+            </div>
+            <div id="holidayList"></div>
+            <div class="columns">
+              <div class="column">
+                <input type="date" id="datePicker" />
+              </div>
+              <div class="column">
+                <input
+                  class="input"
+                  id="holidayName"
+                  type="text"
+                  placeholder="Feiertag"
+                />
+              </div>
+            </div>
+            <div class="column">
+              <button class="button is-primary is-fullwidth" id="addHoliday">
+                Feiertag hinzufügen
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
+    <script src="/assets/bulma-calendar.min.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
