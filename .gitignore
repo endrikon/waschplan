@@ -1,4 +1,5 @@
 **/target/
+**/built/
 # Devenv
 .devenv*
 devenv.local.nix

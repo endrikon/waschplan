@@ -10,7 +10,7 @@ in
       rustc
       nodejs
       openssl
-      # typescript
+      typescript
     ];
 
     buildInputs = with pkgs; [
