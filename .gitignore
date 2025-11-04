@@ -1,5 +1,6 @@
 **/target/
 **/built/
+**/node_modules
 # Devenv
 .devenv*
 devenv.local.nix
