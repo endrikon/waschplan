@@ -24,7 +24,7 @@ type Apartment = OneApartment | TwoApartments | ThreeApartments;
 
 interface FloorProps {
   row: Floor;
-  apartment?: Apartment;
+  apartment: Apartment;
   onAddColumn: () => void;
   onRemoveColumn: () => void;
   onDaysAndPositionSelected: (position: number, daysLeft: number) => void;
@@ -32,13 +32,17 @@ interface FloorProps {
 
 interface FloorSelectorProps {
   onDaysSelected: (daysLeft: number) => void;
+  daysLeft: number;
 }
 
-function FloorSelector({ onDaysSelected }: FloorSelectorProps) {
+function FloorSelector({ onDaysSelected, daysLeft }: FloorSelectorProps) {
   return (
     <div className="column is-one-fifth">
       <div className="select rounded is-fullwidth">
-        <select onChange={(e) => onDaysSelected(Number(e.target.value))}>
+        <select
+          onChange={(e) => onDaysSelected(Number(e.target.value))}
+          defaultValue={daysLeft}
+        >
           {[...Array(3).keys()].map((num) => {
             const value = num + 1;
             return (
@@ -90,6 +94,21 @@ function isRemoveDisabled(apartment: Apartment): boolean {
   }
 }
 
+function getDaysLeft(apartment: Apartment): number[] {
+  switch (apartment.kind) {
+    case "OneApartment":
+      return [apartment.daysTotal];
+    case "TwoApartments":
+      return [apartment.leftDaysTotal, apartment.rightDaysTotal];
+    case "ThreeApartments":
+      return [
+        apartment.leftDaysTotal,
+        apartment.middleDaysTotal,
+        apartment.rightDaysTotal,
+      ];
+  }
+}
+
 function FloorsRow({
   apartment,
   row,
@@ -97,48 +116,22 @@ function FloorsRow({
   onRemoveColumn,
   onDaysAndPositionSelected,
 }: FloorProps) {
-  const defaultFloorApartments = apartment
-    ? getNumberOfApartments(apartment)
-    : 1;
-  const defaultAddDisabled = apartment ? isAddDisabled(apartment) : false;
-  const defaultRemoveDisabled = apartment ? isRemoveDisabled(apartment) : true;
-
-  const floorApartments = defaultFloorApartments;
-  const addDisabled = defaultAddDisabled;
-  const removeDisabled = defaultRemoveDisabled;
-  // const [floorApartments, setFloorApartments] = useState(defaultFloorApartments);
-  // const [addDisabled, setAddDisabled] = useState(defaultAddDisabled);
-  // const [removeDisabled, setRemoveDisabled] = useState(defaultRemoveDisabled);
-
-  const handleClickAdd = () => {
-    onAddColumn();
-    // setFloorApartments(floorApartments + 1);
-
-    // setRemoveDisabled(false);
-    // if (floorApartments === 2) {
-    //   setAddDisabled(true);
-    // }
-  };
-  const handleClickRemove = () => {
-    onRemoveColumn();
-    // setFloorApartments(floorApartments - 1);
-
-    // setAddDisabled(false);
-    // if (floorApartments === 2) {
-    //   setRemoveDisabled(true);
-    // }
-  };
+  const floorApartments = getNumberOfApartments(apartment);
+  const addDisabled = isAddDisabled(apartment);
+  const removeDisabled = isRemoveDisabled(apartment);
+  const daysLeftList = getDaysLeft(apartment);
 
   return (
     <div className="columns">
       <div className="column is-1 has-text-centered">
         <p className="has-text-centerd">{row}</p>
       </div>
-      {[...Array(floorApartments)].map((_, index) => (
+      {[...daysLeftList].map((daysLeft, index) => (
         <FloorSelector
           onDaysSelected={(daysLeft: number) =>
             onDaysAndPositionSelected(index, daysLeft)
           }
+          daysLeft={daysLeft}
           key={index}
         />
       ))}
@@ -150,7 +143,7 @@ function FloorsRow({
           className="button is-primary is-fullwidth"
           id="addRow"
           disabled={addDisabled}
-          onClick={handleClickAdd}
+          onClick={onAddColumn}
         >
           +
         </button>
@@ -160,7 +153,7 @@ function FloorsRow({
           className="button is-danger is-fullwidth"
           id="removeRow"
           disabled={removeDisabled}
-          onClick={handleClickRemove}
+          onClick={onRemoveColumn}
         >
           -
         </button>
@@ -256,6 +249,7 @@ function Floors() {
     ["P", { kind: "OneApartment", daysTotal: 1 }],
   ]);
   const [floors, setFloors] = useState(initialFloors);
+  const [removeRowDisabled, setRemoveRowDisabled] = useState(true);
 
   const mkHandleAdd = (floor: Floor) => {
     return () => {
@@ -307,14 +301,30 @@ function Floors() {
   const onRowAdded = () => {
     const [floor, apartment] = Array.from(floors)[floors.size - 1];
     const newFloor = nextFloor(floor);
-    setFloors((oldFloors) => new Map(oldFloors.set(newFloor, apartment)));
+
+    if (floor === "P") {
+      setRemoveRowDisabled(false);
+    }
+
+    setFloors((oldFloors) => {
+      const newFloors = new Map(oldFloors);
+      return newFloors.set(newFloor, apartment);
+    });
   };
 
   const onRowRemoved = () => {
-    const [floor, apartment] = Array.from(floors)[floors.size - 1];
+    const floorArray = Array.from(floors);
+    const [floor, _apartment] = floorArray[floorArray.length - 1];
+    const [floorBefore, _apartment2] = floorArray[floorArray.length - 2];
+
+    if (floorBefore === "P") {
+      setRemoveRowDisabled(true);
+    }
+
     setFloors((oldFloors) => {
-      oldFloors.delete(floor);
-      return new Map(oldFloors);
+      const newFloors = new Map(oldFloors);
+      newFloors.delete(floor);
+      return newFloors;
     });
   };
 
@@ -344,7 +354,7 @@ function Floors() {
           <button
             className="button is-danger is-fullwidth"
             id="removeRow"
-            disabled={false}
+            disabled={removeRowDisabled}
             onClick={onRowRemoved}
           >
             -
