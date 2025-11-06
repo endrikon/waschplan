@@ -1,6 +1,4 @@
-import { useState } from "react";
-
-type Floor = number | "P";
+export type Floor = number | "P";
 
 interface OneApartment {
   kind: "OneApartment";
@@ -20,7 +18,7 @@ interface ThreeApartments {
   rightDaysTotal: number;
 }
 
-type Apartment = OneApartment | TwoApartments | ThreeApartments;
+export type Apartment = OneApartment | TwoApartments | ThreeApartments;
 
 interface FloorProps {
   row: Floor;
@@ -41,7 +39,7 @@ function FloorSelector({ onDaysSelected, daysLeft }: FloorSelectorProps) {
       <div className="select rounded is-fullwidth">
         <select
           onChange={(e) => onDaysSelected(Number(e.target.value))}
-          defaultValue={daysLeft}
+          value={daysLeft}
         >
           {[...Array(3).keys()].map((num) => {
             const value = num + 1;
@@ -163,7 +161,7 @@ function FloorsRow({
 }
 
 // NOTE: Simply returns the given apartment if the position is out of bounds.
-function setDaysLeft(
+export function setDaysLeft(
   apartment: Apartment,
   position: number,
   daysLeft: number,
@@ -201,7 +199,7 @@ function setDaysLeft(
   return apartment;
 }
 
-function addApartment(apartment: Apartment): Apartment {
+export function addApartment(apartment: Apartment): Apartment {
   switch (apartment.kind) {
     case "OneApartment":
       return {
@@ -221,7 +219,7 @@ function addApartment(apartment: Apartment): Apartment {
   }
 }
 
-function removeApartment(apartment: Apartment): Apartment {
+export function removeApartment(apartment: Apartment): Apartment {
   switch (apartment.kind) {
     case "OneApartment":
       return apartment;
@@ -236,7 +234,7 @@ function removeApartment(apartment: Apartment): Apartment {
   }
 }
 
-function nextFloor(floor: Floor): Floor {
+export function nextFloor(floor: Floor): Floor {
   if (floor === "P") {
     return 1;
   } else {
@@ -244,90 +242,27 @@ function nextFloor(floor: Floor): Floor {
   }
 }
 
-function Floors() {
-  let initialFloors: Map<Floor, Apartment> = new Map([
-    ["P", { kind: "OneApartment", daysTotal: 1 }],
-  ]);
-  const [floors, setFloors] = useState(initialFloors);
-  const [removeRowDisabled, setRemoveRowDisabled] = useState(true);
+interface FloorsProperties {
+  floors: Map<Floor, Apartment>;
+  mkHandleAdd: (floor: Floor) => () => void;
+  mkHandleRemove: (floor: Floor) => () => void;
+  mkHandleSetDaysLeft: (
+    floor: Floor,
+  ) => (position: number, daysLeft: number) => void;
+  onRowAdded: () => void;
+  onRowRemoved: () => void;
+  removeRowDisabled: boolean;
+}
 
-  const mkHandleAdd = (floor: Floor) => {
-    return () => {
-      setFloors((oldFloors) => {
-        const oldVal = oldFloors.get(floor);
-        const newMap = new Map(oldFloors);
-        return newMap.set(
-          floor,
-          addApartment(
-            oldVal === undefined
-              ? { kind: "OneApartment", daysTotal: 1 }
-              : oldVal,
-          ),
-        );
-      });
-    };
-  };
-
-  const mkHandleRemove = (floor: Floor) => {
-    return () => {
-      setFloors((oldFloors) => {
-        const oldVal = oldFloors.get(floor);
-        const newMap = new Map(oldFloors);
-        return newMap.set(
-          floor,
-          removeApartment(
-            oldVal === undefined
-              ? { kind: "OneApartment", daysTotal: 1 }
-              : oldVal,
-          ),
-        );
-      });
-    };
-  };
-
-  const mkHandleSetDaysLeft = (floor: Floor) => {
-    return (position: number, daysLeft: number) => {
-      setFloors((oldFloors) => {
-        const oldVal = oldFloors.get(floor);
-        const apartment: Apartment =
-          oldVal === undefined
-            ? { kind: "OneApartment", daysTotal: 1 }
-            : oldVal;
-        return oldFloors.set(floor, setDaysLeft(apartment, position, daysLeft));
-      });
-    };
-  };
-
-  const onRowAdded = () => {
-    const [floor, apartment] = Array.from(floors)[floors.size - 1];
-    const newFloor = nextFloor(floor);
-
-    if (floor === "P") {
-      setRemoveRowDisabled(false);
-    }
-
-    setFloors((oldFloors) => {
-      const newFloors = new Map(oldFloors);
-      return newFloors.set(newFloor, apartment);
-    });
-  };
-
-  const onRowRemoved = () => {
-    const floorArray = Array.from(floors);
-    const [floor, _apartment] = floorArray[floorArray.length - 1];
-    const [floorBefore, _apartment2] = floorArray[floorArray.length - 2];
-
-    if (floorBefore === "P") {
-      setRemoveRowDisabled(true);
-    }
-
-    setFloors((oldFloors) => {
-      const newFloors = new Map(oldFloors);
-      newFloors.delete(floor);
-      return newFloors;
-    });
-  };
-
+function Floors({
+  floors,
+  mkHandleAdd,
+  mkHandleRemove,
+  mkHandleSetDaysLeft,
+  onRowAdded,
+  onRowRemoved,
+  removeRowDisabled,
+}: FloorsProperties) {
   return (
     <div className="column is-half" id="floors">
       {Array.from(floors).map(([floor, apartment], index) => (
