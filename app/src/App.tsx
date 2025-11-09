@@ -11,7 +11,8 @@ import {
 } from "./components/Floors";
 import Floors from "./components/Floors";
 import Checkboxes from "./components/Checkboxes";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import LastToWash from "./components/LastToWash";
 
 function App() {
   // const [greetMsg, setGreetMsg] = useState("");
@@ -36,7 +37,7 @@ function App() {
           floor,
           addApartment(
             oldVal === undefined
-              ? { kind: "OneApartment", daysTotal: 1 }
+              ? { kind: "OneApartment", middleDaysTotal: 1 }
               : oldVal,
           ),
         );
@@ -53,7 +54,7 @@ function App() {
           floor,
           removeApartment(
             oldVal === undefined
-              ? { kind: "OneApartment", daysTotal: 1 }
+              ? { kind: "OneApartment", middleDaysTotal: 1 }
               : oldVal,
           ),
         );
@@ -67,7 +68,7 @@ function App() {
         const oldVal = oldFloors.get(floor);
         const apartment: Apartment =
           oldVal === undefined
-            ? { kind: "OneApartment", daysTotal: 1 }
+            ? { kind: "OneApartment", middleDaysTotal: 1 }
             : Object.assign({}, oldVal);
         const newFloors = new Map(oldFloors);
         return newFloors.set(floor, setDaysLeft(apartment, position, daysLeft));
@@ -110,7 +111,7 @@ function App() {
         const newFloors = new Map(oldFloors);
         newFloors.delete("P");
         if (newFloors.size === 0) {
-          newFloors.set(1, { kind: "OneApartment", daysTotal: 1 });
+          newFloors.set(1, { kind: "OneApartment", middleDaysTotal: 1 });
         }
         return newFloors;
       } else {
@@ -145,36 +146,7 @@ function App() {
             />
             <div className="column is-half">
               <Checkboxes onCheckHasParterre={onCheckHasParterre} />
-              <div className="columns">
-                <div className="column is-one-third">
-                  <div className="select">
-                    <select id="lastFloor" defaultValue={""}>
-                      <option value="" disabled>
-                        Stockwerk auswählen
-                      </option>
-                      <option value="P">P</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="column is-one-third">
-                  <div className="select">
-                    <select id="lastPosition" defaultValue={""}>
-                      <option value="" disabled>
-                        Position auswählen
-                      </option>
-                    </select>
-                  </div>
-                </div>
-                <div className="column is-one-third">
-                  <div className="select">
-                    <select id="lastLaundryDay" defaultValue={""}>
-                      <option value="" disabled>
-                        Waschtag auswählen
-                      </option>
-                    </select>
-                  </div>
-                </div>
-              </div>
+              <LastToWash floors={floors} />
               <div className="column is-size-3">
                 <b>Feiertage</b>
               </div>
