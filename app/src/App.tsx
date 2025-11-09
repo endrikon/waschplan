@@ -13,6 +13,7 @@ import Floors from "./components/Floors";
 import Checkboxes from "./components/Checkboxes";
 import { useState } from "react";
 import LastToWash from "./components/LastToWash";
+import Holidays from "./components/Holidays";
 
 function App() {
   // const [greetMsg, setGreetMsg] = useState("");
@@ -147,31 +148,7 @@ function App() {
             <div className="column is-half">
               <Checkboxes onCheckHasParterre={onCheckHasParterre} />
               <LastToWash floors={floors} />
-              <div className="column is-size-3">
-                <b>Feiertage</b>
-              </div>
-              <div id="holidayList"></div>
-              <div className="columns">
-                <div className="column">
-                  <input type="date" id="datePicker" />
-                </div>
-                <div className="column">
-                  <input
-                    className="input"
-                    id="holidayName"
-                    type="text"
-                    placeholder="Feiertag"
-                  />
-                </div>
-              </div>
-              <div className="column">
-                <button
-                  className="button is-primary is-fullwidth"
-                  id="addHoliday"
-                >
-                  Feiertag hinzufügen
-                </button>
-              </div>
+              <Holidays />
             </div>
           </div>
         </div>
