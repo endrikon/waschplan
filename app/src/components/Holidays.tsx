@@ -85,9 +85,12 @@ function Holiday({ date, name, onDelete }: HolidayParameters) {
 
 type NullDate = Date | null;
 
-function Holidays() {
-  const [holidayDates, setHolidayDates]: [[Date, String][], Dispatch<any>] =
-    useState([]);
+interface HolidaysParameters {
+  holidayDates: [Date, String][];
+  setHolidayDates: (holidays: [Date, String][]) => void;
+}
+
+function Holidays({ holidayDates, setHolidayDates }: HolidaysParameters) {
   const [selectedDate, setSelectedDate]: [NullDate, Dispatch<any>] =
     useState(null);
   const [holidayName, setHolidayName]: [string, Dispatch<any>] = useState("");
@@ -105,8 +108,8 @@ function Holidays() {
           date={holiday[0]}
           name={holiday[1]}
           onDelete={() =>
-            setHolidayDates((holidays: [Date, String][]) =>
-              holidays.filter(([d, _]: [Date, String]) => d !== holiday[0]),
+            setHolidayDates(
+              holidayDates.filter(([d, _]: [Date, String]) => d !== holiday[0]),
             )
           }
         />
@@ -138,17 +141,16 @@ function Holidays() {
           id="addHoliday"
           disabled={holidayName === "" || !addHolidayEnabled}
           onClick={() => {
-            setHolidayDates((holidays: [Date, String][]) => {
-              const newHolidays = Array.of(...holidays);
-              if (selectedDate) {
-                newHolidays.push([selectedDate, holidayName]);
-              }
-              return newHolidays.sort(
-                ([a, _a]: [Date, String], [b, _b]: [Date, String]) => {
-                  return a > b ? 1 : -1;
-                },
-              );
-            });
+            const newHolidays = Array.of(...holidayDates);
+            if (selectedDate) {
+              newHolidays.push([selectedDate, holidayName]);
+            }
+            const sortedHolidays = newHolidays.sort(
+              ([a, _a]: [Date, String], [b, _b]: [Date, String]) => {
+                return a > b ? 1 : -1;
+              },
+            );
+            setHolidayDates(sortedHolidays);
             setHolidayName("");
           }}
         >
