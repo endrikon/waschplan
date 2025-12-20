@@ -38,7 +38,7 @@ fn create_laundry_plan(
     let year_map =
         types::create_full_year(&config, year, last_apartment, exclude_sunday, &holidays);
 
-    html::create_year_html(&config, &year_map).unwrap();
+    html::create_year_html(&config, &year_map, year).unwrap();
 }
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
