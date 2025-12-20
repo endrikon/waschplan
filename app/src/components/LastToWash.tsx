@@ -3,9 +3,38 @@ import { Floor, Apartment } from "./Floors";
 
 interface LastToWashProperties {
   floors: Map<Floor, Apartment>;
+  lastFloor: Floor | null;
+  setLastFloor: (floor: Floor | null) => void;
+  lastPosition: "" | Position;
+  setLastPosition: (position: "" | Position) => void;
+  lastDay: Number;
+  setLastDay: (lastDay: Number) => void;
+  maxDays: Number;
+  setMaxDays: (maxDays: Number) => void;
 }
 
-type Position = "Links" | "Mitte" | "Rechts" | "EinzelWohnung";
+export interface ApartmentInfo {
+  currentFloor: Number;
+  position: FloorPosition;
+  daysLeft: Number;
+}
+
+export type FloorPosition = "Left" | "Middle" | "Right";
+
+export type Position = "Links" | "Mitte" | "Rechts" | "EinzelWohnung";
+
+export function positionToFloorPosition(position: Position): FloorPosition {
+  switch (position) {
+    case "Links":
+      return "Left";
+    case "Mitte":
+      return "Middle";
+    case "Rechts":
+      return "Right";
+    case "EinzelWohnung":
+      return "Middle";
+  }
+}
 
 function stringToPosition(positionStr: string): Position {
   switch (positionStr) {
@@ -79,29 +108,37 @@ function stringToFloor(floorStr: string): Floor {
   }
 }
 
-function LastToWash({ floors }: LastToWashProperties) {
-  const baseFloor: Floor = "P";
-  const baseApartment = floors.get(baseFloor);
-
+function LastToWash({
+  floors,
+  lastDay,
+  setLastDay,
+  lastFloor,
+  setLastFloor,
+  lastPosition,
+  setLastPosition,
+  maxDays,
+  setMaxDays,
+}: LastToWashProperties) {
+  const [lastApartment, setLastApartment]: [
+    Apartment | undefined,
+    Dispatch<any>,
+  ] = useState(undefined);
   const [lastFloorValue, setLastFloorValue] = useState("");
-  const [lastFloor, setLastFloor]: [Floor, Dispatch<any>] = useState(baseFloor);
-  const [lastApartment, setLastApartment] = useState(baseApartment);
-  const [lastPosition, setLastPosition] = useState("");
-  const [maxDays, setMaxDays] = useState(0);
-  const [lastDay, setLastDay] = useState(0);
 
   useEffect(() => {
-    const relevantApartment = floors.get(lastFloor);
+    if (lastFloor) {
+      const relevantApartment = floors.get(lastFloor);
 
-    if (relevantApartment === undefined) {
-      setLastFloorValue("");
-      setLastFloor(undefined);
-    }
+      if (relevantApartment === undefined) {
+        setLastFloorValue("");
+        setLastFloor(null);
+      }
 
-    if (relevantApartment !== lastApartment) {
-      setLastApartment(relevantApartment);
-      setLastPosition("");
-      setLastDay(0);
+      if (relevantApartment !== lastApartment) {
+        setLastApartment(relevantApartment);
+        setLastPosition("");
+        setLastDay(0);
+      }
     }
   }, [floors]);
 
@@ -142,8 +179,8 @@ function LastToWash({ floors }: LastToWashProperties) {
             value={lastPosition}
             onChange={(e) => {
               const lastPosition = e.target.value;
-              setLastPosition(lastPosition);
               const position = stringToPosition(lastPosition);
+              setLastPosition(position);
               const days: number = getDays(lastApartment, position);
               setMaxDays(days);
             }}
@@ -161,7 +198,7 @@ function LastToWash({ floors }: LastToWashProperties) {
         <div className="select">
           <select
             id="lastLaundryDay"
-            value={lastDay}
+            value={lastDay.toString()}
             onChange={(e) => {
               const value = Number(e.target.value);
               setLastDay(value);

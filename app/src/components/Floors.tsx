@@ -33,6 +33,43 @@ interface FloorSelectorProps {
   daysLeft: number;
 }
 
+export function floorToString(floor: Floor): String {
+  switch (floor) {
+    case "P":
+      return "0";
+    default:
+      return floor.toString();
+  }
+}
+
+export function floorToNum(floor: Floor): Number {
+  switch (floor) {
+    case "P":
+      return 0;
+    default:
+      return floor;
+  }
+}
+
+export function apartmentToObject(apartment: Apartment): Object {
+  const kind = apartment.kind.toString();
+  var apartmentCopy = {};
+
+  for (const key in apartment) {
+    if (key !== "kind") {
+      const keySnake = key
+        .toString()
+        .replace(/([a-z])([A-Z])/g, "$1_$2")
+        .toLowerCase();
+      apartmentCopy[keySnake] = apartment[key];
+    }
+  }
+
+  const result = {};
+  result[kind] = apartmentCopy;
+  return result;
+}
+
 function FloorSelector({ onDaysSelected, daysLeft }: FloorSelectorProps) {
   return (
     <div className="column is-one-fifth">
@@ -264,7 +301,7 @@ function Floors({
   removeRowDisabled,
 }: FloorsProperties) {
   return (
-    <div className="column is-half" id="floors">
+    <>
       {Array.from(floors).map(([floor, apartment], index) => (
         <FloorsRow
           row={floor}
@@ -296,7 +333,7 @@ function Floors({
           </button>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

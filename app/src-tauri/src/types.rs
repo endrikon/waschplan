@@ -80,7 +80,7 @@ where
     std::fs::write(path, content)
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Deserialize)]
 pub enum FloorPosition {
     Left,
     Middle,
@@ -620,6 +620,7 @@ impl fmt::Display for ApartmentInfoError {
     }
 }
 
+#[derive(Deserialize, Debug)]
 pub struct ApartmentInfo {
     pub current_floor: u32,
     pub position: FloorPosition,

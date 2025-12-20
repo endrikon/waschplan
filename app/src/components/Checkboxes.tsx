@@ -2,9 +2,15 @@ import { useState } from "react";
 
 interface CheckboxesProperties {
   onCheckHasParterre: (isChecked: boolean) => void;
+  sundayAllowed: boolean;
+  toggleSundayAllowed: () => void;
 }
 
-function Checkboxes({ onCheckHasParterre }: CheckboxesProperties) {
+function Checkboxes({
+  onCheckHasParterre,
+  sundayAllowed,
+  toggleSundayAllowed,
+}: CheckboxesProperties) {
   const [withParterre, setWithParterre] = useState(true);
 
   return (
@@ -22,7 +28,12 @@ function Checkboxes({ onCheckHasParterre }: CheckboxesProperties) {
             Parterre
           </label>
           <label className="checkbox is-size-4">
-            <input type="checkbox" id="sunday" />
+            <input
+              type="checkbox"
+              id="sunday"
+              checked={sundayAllowed}
+              onClick={toggleSundayAllowed}
+            />
             Sonntag
           </label>
         </div>
