@@ -1,10 +1,42 @@
-use datetime::LocalDate;
+use datetime::{DatePiece, LocalDate};
 use std::collections::BTreeMap;
-use tokio::runtime::Runtime;
 
 pub mod holidays;
 pub mod html;
 pub mod types;
+
+fn localdate_to_string(date: &LocalDate) -> String {
+    format!("{}/{}/{}",
+        date.year(),
+        date.month().months_from_january() + 1,
+        date.day())
+}
+
+#[tauri::command]
+async fn get_holidays(
+    year: u16,
+    country_iso: String,
+    subdivision_iso: String,
+) -> Vec<(String, String)> {
+    holidays::get_holidays(year, country_iso, subdivision_iso)
+        .await
+        .expect("Expected to get holidays")
+        .iter()
+        .map(|(date, holiday)| (localdate_to_string(date), holiday.to_owned()))
+        .collect()
+}
+
+#[tauri::command]
+fn get_subdivisions(country_iso: &str) -> Vec<(String, String)> {
+    let iso = rust_iso3166::from_alpha2(country_iso).unwrap();
+    match iso.subdivisions() {
+        None => vec![],
+        Some(subdivisions) => subdivisions
+            .iter()
+            .map(|subdivision| (subdivision.name.into(), subdivision.code.into()))
+            .collect(),
+    }
+}
 
 fn string_to_local_date(date_str: &str) -> Option<LocalDate> {
     let ymd: Vec<i64> = date_str
@@ -51,7 +83,13 @@ fn greet(name: &str) -> String {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, create_laundry_plan])
+        .plugin(tauri_plugin_http::init())
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            create_laundry_plan,
+            get_subdivisions,
+            get_holidays
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

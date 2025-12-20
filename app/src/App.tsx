@@ -38,6 +38,10 @@ function App() {
   const [holidayDates, setHolidayDates]: [[Date, String][], Dispatch<any>] =
     useState([]);
   const [sundayAllowed, setSundayAllowed] = useState(false);
+  const [country, setCountry] = useState("");
+  const [region, setRegion] = useState("");
+  const [regionList, setRegionList]: [[string, string][], Dispatch<any>] =
+    useState([]);
 
   const lowestYear = 2020;
   const highestYear = 2050;
@@ -73,6 +77,47 @@ function App() {
       apartmentInfo: apartmentInfo,
       holidays: new Map(holidayDatesStr),
       excludeSunday: !sundayAllowed,
+    });
+  };
+
+  const setCountryAndDivisions = async (newCountry: string) => {
+    setCountry(newCountry);
+
+    if (newCountry !== "") {
+      const subdivisions: [string, string][] = await invoke(
+        "get_subdivisions",
+        {
+          countryIso: newCountry,
+        },
+      );
+      setRegionList(subdivisions);
+    }
+  };
+
+  const getAndSetHolidaysFromWeb = async () => {
+    const holidays: [string, String][] = await invoke("get_holidays", {
+      year: Number(year),
+      countryIso: country,
+      subdivisionIso: region,
+    });
+
+    setHolidayDates((oldHolidays: [Date, String][]) => {
+      const oldHolidayStr: [string, String][] = oldHolidays.map(
+        ([date, name]) => [
+          `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`,
+          name,
+        ],
+      );
+      const holidayMap = new Map(oldHolidayStr);
+      holidays.forEach(([dateStr, holiday]) => {
+        holidayMap.set(dateStr, holiday);
+      });
+
+      const newHolidays: [Date, String][] = Array.of(...holidayMap).map(
+        ([dateStr, name]) => [new Date(dateStr), name],
+      );
+
+      return newHolidays;
     });
   };
 
@@ -261,6 +306,15 @@ function App() {
               <Holidays
                 holidayDates={holidayDates}
                 setHolidayDates={setHolidayDates}
+                country={country}
+                setCountry={setCountryAndDivisions}
+                region={region}
+                setRegion={setRegion}
+                regionList={regionList}
+                getAndSetHolidaysFromWeb={getAndSetHolidaysFromWeb}
+                addingFromInternetEnabled={
+                  year !== "" && country !== "" && region !== ""
+                }
               />
             </div>
           </div>
