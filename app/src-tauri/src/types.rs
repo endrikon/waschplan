@@ -734,12 +734,14 @@ pub struct DayHTMLData {
     pub date: String,
     pub day: String,
     pub appartment: String,
+    pub is_holiday: bool,
 }
 
 #[derive(Debug)]
 pub struct Day {
     date: LocalDate,
     appartment: ApartmentOfDay,
+    is_holiday: bool,
 }
 
 #[derive(Debug)]
@@ -767,7 +769,12 @@ impl Day {
         let date = LocalDate::yd(year as i64, 1).unwrap();
         let appartment =
             create_appartment_of_day(date, appartment, position_map, exclude_sunday, holidays);
-        Day { date, appartment }
+        let is_holiday = holidays.get(&date).is_some();
+        Day {
+            date,
+            appartment,
+            is_holiday,
+        }
     }
 
     pub fn next(
@@ -787,8 +794,13 @@ impl Day {
         let app = self.appartment.extract_appartment().clone();
         let appartment =
             create_appartment_of_day(date, app, position_map, exclude_sunday, holidays);
+        let is_holiday = holidays.get(&date).is_some();
 
-        Ok(Day { date, appartment })
+        Ok(Day {
+            date,
+            appartment,
+            is_holiday,
+        })
     }
 
     pub fn print(&self) -> String {
@@ -805,6 +817,7 @@ impl Day {
             date: print_local_date(self.date),
             day: print_local_weekday(self.date),
             appartment: self.appartment.print_appartment(),
+            is_holiday: self.is_holiday,
         }
     }
 }
