@@ -1,0 +1,28 @@
+.bootstrap-scope.bootstrap-scope {
+  @import 'bootstrap/scss/bootstrap';
+
+  table.striped > tr:nth-child(odd),
+  table.striped > tbody > tr:nth-child(odd) {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  td.fs-7 {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  }
+  th.fs-7 {
+    border-bottom-width: 0px;
+    column-count: 3;
+  }
+  .no-page-break {
+    page-break-after: avoid !important;
+    page-break-before: avoid !important;
+  }
+}
+
+@media print {
+  .noprint {
+    visibility: hidden !important;
+    display: none !important;
+  }
+}
+

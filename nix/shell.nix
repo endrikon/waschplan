@@ -27,4 +27,5 @@ in
       webkitgtk_4_1
       openssl
     ];
+    GIO_EXTRA_MODULES = ["${pkgs.glib-networking.out}/lib/gio/modules"];
   }

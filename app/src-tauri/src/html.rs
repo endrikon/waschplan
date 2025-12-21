@@ -1,7 +1,3 @@
-use std::error::Error;
-use std::fs::File;
-use std::io::Write;
-
 use crate::types::{self, DayHTMLData, YearMap};
 use build_html::{
     self, Html, HtmlContainer, HtmlElement, HtmlPage, Table, TableCell, TableCellType, TableRow,
@@ -37,12 +33,12 @@ fn create_month_row(row_data: &[(&i8, &Vec<DayHTMLData>)]) -> TableRow {
         row.with_cell(
             TableCell::new(TableCellType::Data).with_table(
                 create_month_table(data)
-                    .with_attributes([("class", "table table-sm table-striped")])
+                    .with_attributes([("class", "table table-sm table-striped striped")])
                     .with_custom_header_row(
                         TableRow::new().with_cell(
                             TableCell::new(TableCellType::Header)
                                 .with_raw(types::month_to_string(current_month))
-                                .with_attributes([("class", "fs-7")]),
+                                .with_attributes([("class", "fs-7"), ("colspan", "3")]),
                         ),
                     ),
             ),
@@ -50,13 +46,7 @@ fn create_month_row(row_data: &[(&i8, &Vec<DayHTMLData>)]) -> TableRow {
     })
 }
 
-pub fn create_year_html(
-    config: &types::Config,
-    year_map: &YearMap,
-    year: u16,
-) -> Result<(), Box<dyn Error>> {
-    let path = format!("{}.html", config.title);
-    let mut output = File::create(path)?;
+pub fn create_year_html(config: &types::Config, year_map: &YearMap, year: u16) -> String {
     let YearMap(map) = year_map;
     let mut month_data_vec: Vec<(&i8, &Vec<DayHTMLData>)> = map.iter().collect();
     month_data_vec.sort_by_key(|(y, _)| **y);
@@ -68,8 +58,8 @@ pub fn create_year_html(
         .fold(Table::new(), |table, triple| {
             table.with_custom_body_row(create_month_row(triple))
         })
-        .with_attributes([("class", "table table-sm table-borderless")]);
-    let page = HtmlPage::new()
+        .with_attributes([("class", "table table-sm table-borderless mb-0")]);
+    HtmlPage::new()
         .with_html(
             HtmlElement::new(build_html::HtmlTag::Heading5)
                 .with_child(
@@ -114,12 +104,6 @@ pub fn create_year_html(
                 float: right;
             }"#,
         )
-        .with_head_link(
-            "https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css",
-            "stylesheet",
-        )
         .with_table(table)
-        .to_html_string();
-
-    write!(output, "{}", page).map_err(|err| Box::new(err) as _)
+        .to_html_string()
 }

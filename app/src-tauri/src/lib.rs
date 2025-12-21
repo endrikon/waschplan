@@ -1,9 +1,20 @@
 use datetime::{DatePiece, LocalDate};
 use std::collections::BTreeMap;
+use tauri::Manager;
 
 pub mod holidays;
 pub mod html;
 pub mod types;
+
+#[tauri::command]
+fn print_window(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        window.print().map_err(|e| e.to_string())?;
+        Ok(())
+    } else {
+        Err("Window not found".to_string())
+    }
+}
 
 fn localdate_to_string(date: &LocalDate) -> String {
     format!("{}/{}/{}",
@@ -58,7 +69,7 @@ fn create_laundry_plan(
     apartment_info: types::ApartmentInfo,
     holidays: BTreeMap<String, String>,
     exclude_sunday: bool,
-) {
+) -> String {
     // TODO: unwrapping is not so nice
     let holidays: BTreeMap<LocalDate, String> = holidays
         .iter()
@@ -70,7 +81,7 @@ fn create_laundry_plan(
     let year_map =
         types::create_full_year(&config, year, last_apartment, exclude_sunday, &holidays);
 
-    html::create_year_html(&config, &year_map, year).unwrap();
+    html::create_year_html(&config, &year_map, year)
 }
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -88,7 +99,8 @@ pub fn run() {
             greet,
             create_laundry_plan,
             get_subdivisions,
-            get_holidays
+            get_holidays,
+            print_window
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

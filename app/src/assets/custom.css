@@ -1,0 +1,26 @@
+@page {
+  margin-top: 0.75cm;
+}
+.fs-7 {
+  font-size: 0.55rem;
+  padding-top: 0px !important;
+  padding-bottom: 0px !important;
+}
+.date {
+  width: 10%;
+  padding-right: 0cm !important;
+  font-weight: bold;
+}
+.day {
+  width: 20%;
+  padding-right: 0cm !important;
+}
+.apartment {
+  width: 70%;
+}
+#house-name {
+  float: left;
+}
+#year {
+  float: right;
+}
