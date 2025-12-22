@@ -75,35 +75,6 @@ pub fn create_year_html(config: &types::Config, year_map: &YearMap, year: u16) -
                         .into(),
                 ),
         )
-        .with_style(
-            r#"
-            @page {
-                margin-top: 0.75cm;
-            }
-            .fs-7 {
-                font-size: 0.6rem;
-                padding-top: 0px !important;
-                padding-bottom: 0px !important;
-            }
-            .date {
-                width: 10%;
-                padding-right: 0cm !important;
-                font-weight: bold;
-            }
-            .day {
-                width: 20%;
-                padding-right: 0cm !important;
-            }
-            .apartment {
-                width: 70%;
-            }
-            #house-name {
-                float: left;
-            }
-            #year {
-                float: right;
-            }"#,
-        )
         .with_table(table)
         .to_html_string()
 }
