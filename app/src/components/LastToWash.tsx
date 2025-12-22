@@ -1,16 +1,18 @@
-import { Dispatch, useEffect, useState } from "react";
+import { Dispatch, useEffect } from "react";
 import { Floor, Apartment } from "./Floors";
 
 interface LastToWashProperties {
   floors: Map<Floor, Apartment>;
-  lastFloor: Floor | null;
-  setLastFloor: (floor: Floor | null) => void;
+  lastFloor: Floor | "";
+  setLastFloor: (floor: Floor | "") => void;
   lastPosition: "" | Position;
   setLastPosition: (position: "" | Position) => void;
   lastDay: Number;
   setLastDay: (lastDay: Number) => void;
   maxDays: Number;
   setMaxDays: (maxDays: Number) => void;
+  lastApartment: Apartment | undefined;
+  setLastApartment: Dispatch<any>;
 }
 
 export interface ApartmentInfo {
@@ -118,20 +120,16 @@ function LastToWash({
   setLastPosition,
   maxDays,
   setMaxDays,
+  lastApartment,
+  setLastApartment,
 }: LastToWashProperties) {
-  const [lastApartment, setLastApartment]: [
-    Apartment | undefined,
-    Dispatch<any>,
-  ] = useState(undefined);
-  const [lastFloorValue, setLastFloorValue] = useState("");
-
   useEffect(() => {
-    if (lastFloor) {
+    console.log("DEBUG");
+    if (lastFloor !== "") {
       const relevantApartment = floors.get(lastFloor);
 
       if (relevantApartment === undefined) {
-        setLastFloorValue("");
-        setLastFloor(null);
+        setLastFloor("");
       }
 
       if (relevantApartment !== lastApartment) {
@@ -148,13 +146,12 @@ function LastToWash({
         <div className="select">
           <select
             id="lastFloor"
-            value={lastFloorValue}
+            value={lastFloor}
             onChange={(e) => {
               const selectedFloorStr = e.target.value;
               const selectedFloor = stringToFloor(selectedFloorStr);
               setLastFloor(selectedFloor);
               setLastApartment(floors.get(selectedFloor));
-              setLastFloorValue(selectedFloorStr);
 
               // reset apartment and day selector
               setLastPosition("");

@@ -14,41 +14,78 @@ import {
 } from "./Floors";
 import Floors from "./Floors";
 import Checkboxes from "./Checkboxes";
-import { Dispatch, useState } from "react";
+import { Dispatch } from "react";
 import LastToWash, { Position, positionToFloorPosition } from "./LastToWash";
 import Holidays from "./Holidays";
 
 interface PlanCreationParameters {
   setPreview: (preview: string) => void;
+  floors: Map<Floor, Apartment>;
+  setFloors: Dispatch<any>;
+  removeRowDisabled: boolean;
+  setRemoveRowDisabled: (removeRowDisabled: boolean) => void;
+  year: string;
+  setYear: (year: string) => void;
+  address: string;
+  setAddress: (address: string) => void;
+  lastFloor: Floor | "";
+  setLastFloor: (lastFloor: Floor | "") => void;
+  lastPosition: Position | "";
+  setLastPosition: (lastPosition: Position | "") => void;
+  lastDay: number;
+  setLastDay: Dispatch<any>;
+  maxDays: number;
+  setMaxDays: Dispatch<any>;
+  holidayDates: [Date, String][];
+  setHolidayDates: Dispatch<any>;
+  sundayAllowed: boolean;
+  setSundayAllowed: (sundayAllowed: boolean) => void;
+  country: string;
+  setCountry: (country: string) => void;
+  region: string;
+  setRegion: (region: string) => void;
+  regionList: [string, string][];
+  setRegionList: (regionList: [string, string][]) => void;
+  lastApartment: Apartment | undefined;
+  setLastApartment: Dispatch<any>;
 }
 
-function PlanCreation({ setPreview }: PlanCreationParameters) {
-  let initialFloors: Map<Floor, Apartment> = new Map([
-    ["P", { kind: "OneApartment", daysTotal: 1 }],
-  ]);
-  const [floors, setFloors] = useState(initialFloors);
-  const [removeRowDisabled, setRemoveRowDisabled] = useState(true);
-  const [year, setYear] = useState("");
-  const [address, setAddress] = useState("");
-  const [lastFloor, setLastFloor]: [Floor | null, Dispatch<any>] =
-    useState(null);
-  const [lastPosition, setLastPosition]: [Position | "", Dispatch<any>] =
-    useState("");
-  const [lastDay, setLastDay]: [number, Dispatch<any>] = useState(0);
-  const [maxDays, setMaxDays]: [number, Dispatch<any>] = useState(0);
-  const [holidayDates, setHolidayDates]: [[Date, String][], Dispatch<any>] =
-    useState([]);
-  const [sundayAllowed, setSundayAllowed] = useState(false);
-  const [country, setCountry] = useState("");
-  const [region, setRegion] = useState("");
-  const [regionList, setRegionList]: [[string, string][], Dispatch<any>] =
-    useState([]);
-
+function PlanCreation({
+  setPreview,
+  floors,
+  setFloors,
+  removeRowDisabled,
+  setRemoveRowDisabled,
+  year,
+  setYear,
+  address,
+  setAddress,
+  lastFloor,
+  setLastFloor,
+  lastPosition,
+  setLastPosition,
+  lastDay,
+  setLastDay,
+  maxDays,
+  setMaxDays,
+  holidayDates,
+  setHolidayDates,
+  sundayAllowed,
+  setSundayAllowed,
+  country,
+  setCountry,
+  region,
+  setRegion,
+  regionList,
+  setRegionList,
+  lastApartment,
+  setLastApartment,
+}: PlanCreationParameters) {
   const lowestYear = 2020;
   const highestYear = 2050;
 
   const createLaundryPlan = async () => {
-    if (lastPosition === "" || lastFloor === null) {
+    if (lastPosition === "" || lastFloor === "") {
       throw "Position error";
     }
     const floorMap = new Map(
@@ -136,7 +173,7 @@ function PlanCreation({ setPreview }: PlanCreationParameters) {
 
   const mkHandleAdd = (floor: Floor) => {
     return () => {
-      setFloors((oldFloors) => {
+      setFloors((oldFloors: Map<Floor, Apartment>) => {
         const oldVal = oldFloors.get(floor);
         const newMap = new Map(oldFloors);
         return newMap.set(
@@ -153,7 +190,7 @@ function PlanCreation({ setPreview }: PlanCreationParameters) {
 
   const mkHandleRemove = (floor: Floor) => {
     return () => {
-      setFloors((oldFloors) => {
+      setFloors((oldFloors: Map<Floor, Apartment>) => {
         const oldVal = oldFloors.get(floor);
         const newMap = new Map(oldFloors);
         return newMap.set(
@@ -170,7 +207,7 @@ function PlanCreation({ setPreview }: PlanCreationParameters) {
 
   const mkHandleSetDaysLeft = (floor: Floor) => {
     return (position: number, daysLeft: number) => {
-      setFloors((oldFloors) => {
+      setFloors((oldFloors: Map<Floor, Apartment>) => {
         const oldVal = oldFloors.get(floor);
         const apartment: Apartment =
           oldVal === undefined
@@ -190,7 +227,7 @@ function PlanCreation({ setPreview }: PlanCreationParameters) {
       setRemoveRowDisabled(false);
     }
 
-    setFloors((oldFloors) => {
+    setFloors((oldFloors: Map<Floor, Apartment>) => {
       const newFloors = new Map(oldFloors);
       return newFloors.set(newFloor, apartment);
     });
@@ -204,7 +241,7 @@ function PlanCreation({ setPreview }: PlanCreationParameters) {
       setRemoveRowDisabled(true);
     }
 
-    setFloors((oldFloors) => {
+    setFloors((oldFloors: Map<Floor, Apartment>) => {
       const newFloors = new Map(oldFloors);
       newFloors.delete(floor);
       return newFloors;
@@ -212,7 +249,7 @@ function PlanCreation({ setPreview }: PlanCreationParameters) {
   };
 
   const onCheckHasParterre = (isChecked: boolean) => {
-    setFloors((oldFloors) => {
+    setFloors((oldFloors: Map<Floor, Apartment>) => {
       if (isChecked) {
         const newFloors = new Map(oldFloors);
         newFloors.delete("P");
@@ -305,6 +342,8 @@ function PlanCreation({ setPreview }: PlanCreationParameters) {
                 setLastPosition={setLastPosition}
                 maxDays={maxDays}
                 setMaxDays={setMaxDays}
+                lastApartment={lastApartment}
+                setLastApartment={setLastApartment}
               />
               <Holidays
                 holidayDates={holidayDates}
