@@ -1,10 +1,44 @@
 use datetime::{DatePiece, LocalDate};
 use std::collections::BTreeMap;
+use std::fs::File;
+use std::io::Write;
 use tauri::Manager;
+use tauri_plugin_dialog::DialogExt;
 
 pub mod holidays;
 pub mod html;
 pub mod types;
+
+#[tauri::command]
+fn save_config(app: tauri::AppHandle, config: types::Config) {
+    let content = serde_json::to_string_pretty(&config).unwrap().to_owned();
+    app.dialog()
+        .file()
+        .add_filter(".json", &["json"])
+        .save_file(move |file_path_opt| {
+            if let Some(file_path) = file_path_opt {
+                file_path.into_path().iter().for_each(|path| {
+                    File::create(path).iter().for_each(|mut out| {
+                        write!(out, "{}", content).ok();
+                    });
+                })
+            }
+        });
+}
+
+#[tauri::command]
+async fn read_config(app: tauri::AppHandle) -> Result<types::Config, String> {
+    let file_path_opt = app
+        .dialog()
+        .file()
+        .add_filter(".json", &["json"])
+        .blocking_pick_file();
+
+    file_path_opt
+        .ok_or("No path given.".to_owned())
+        .and_then(|file_path| file_path.into_path().map_err(|err| err.to_string()))
+        .and_then(|path| types::config_from_file(path).map_err(|err| err.to_string()))
+}
 
 #[tauri::command]
 fn print_window(app: tauri::AppHandle) -> Result<(), String> {
@@ -17,10 +51,12 @@ fn print_window(app: tauri::AppHandle) -> Result<(), String> {
 }
 
 fn localdate_to_string(date: &LocalDate) -> String {
-    format!("{}/{}/{}",
+    format!(
+        "{}/{}/{}",
         date.year(),
         date.month().months_from_january() + 1,
-        date.day())
+        date.day()
+    )
 }
 
 #[tauri::command]
@@ -84,23 +120,19 @@ fn create_laundry_plan(
     html::create_year_html(&config, &year_map, year)
 }
 
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_http::init())
         .invoke_handler(tauri::generate_handler![
-            greet,
             create_laundry_plan,
             get_subdivisions,
             get_holidays,
-            print_window
+            print_window,
+            save_config,
+            read_config
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

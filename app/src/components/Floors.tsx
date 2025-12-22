@@ -20,6 +20,32 @@ interface ThreeApartments {
 
 export type Apartment = OneApartment | TwoApartments | ThreeApartments;
 
+type RustOneApartment = {
+  OneApartment: {
+    days_total: number;
+  };
+};
+
+type RustTwoApartments = {
+  TwoApartments: {
+    left_days_total: number;
+    right_days_total: number;
+  };
+};
+
+type RustThreeApartments = {
+  ThreeApartments: {
+    left_days_total: number;
+    middle_days_total: number;
+    right_days_total: number;
+  };
+};
+
+export type RustApartment =
+  | RustOneApartment
+  | RustTwoApartments
+  | RustThreeApartments;
+
 interface FloorProps {
   row: Floor;
   apartment: Apartment;
@@ -51,23 +77,62 @@ export function floorToNum(floor: Floor): Number {
   }
 }
 
-export function apartmentToObject(apartment: Apartment): Object {
-  const kind = apartment.kind.toString();
-  var apartmentCopy = {};
-
-  for (const key in apartment) {
-    if (key !== "kind") {
-      const keySnake = key
-        .toString()
-        .replace(/([a-z])([A-Z])/g, "$1_$2")
-        .toLowerCase();
-      apartmentCopy[keySnake] = apartment[key];
-    }
+export function stringNumToFloor(floorStr: string): Floor {
+  if (floorStr === "0") {
+    return "P";
+  } else {
+    return Number(floorStr);
   }
+}
 
-  const result = {};
-  result[kind] = apartmentCopy;
-  return result;
+export function apartmentToRustApartment(apartment: Apartment): RustApartment {
+  switch (apartment.kind) {
+    case "OneApartment":
+      return {
+        OneApartment: {
+          days_total: apartment.daysTotal,
+        },
+      };
+    case "TwoApartments":
+      return {
+        TwoApartments: {
+          left_days_total: apartment.leftDaysTotal,
+          right_days_total: apartment.rightDaysTotal,
+        },
+      };
+    case "ThreeApartments":
+      return {
+        ThreeApartments: {
+          left_days_total: apartment.leftDaysTotal,
+          middle_days_total: apartment.middleDaysTotal,
+          right_days_total: apartment.rightDaysTotal,
+        },
+      };
+  }
+}
+
+export function rustApartmentToApartment(
+  rustApartment: RustApartment,
+): Apartment {
+  if ("OneApartment" in rustApartment) {
+    return {
+      kind: "OneApartment",
+      daysTotal: rustApartment.OneApartment.days_total,
+    };
+  } else if ("TwoApartments" in rustApartment) {
+    return {
+      kind: "TwoApartments",
+      leftDaysTotal: rustApartment.TwoApartments.left_days_total,
+      rightDaysTotal: rustApartment.TwoApartments.right_days_total,
+    };
+  } else {
+    return {
+      kind: "ThreeApartments",
+      leftDaysTotal: rustApartment.ThreeApartments.left_days_total,
+      middleDaysTotal: rustApartment.ThreeApartments.middle_days_total,
+      rightDaysTotal: rustApartment.ThreeApartments.right_days_total,
+    };
+  }
 }
 
 function FloorSelector({ onDaysSelected, daysLeft }: FloorSelectorProps) {

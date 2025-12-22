@@ -124,7 +124,6 @@ function LastToWash({
   setLastApartment,
 }: LastToWashProperties) {
   useEffect(() => {
-    console.log("DEBUG");
     if (lastFloor !== "") {
       const relevantApartment = floors.get(lastFloor);
 

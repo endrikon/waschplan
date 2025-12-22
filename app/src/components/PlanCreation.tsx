@@ -8,15 +8,19 @@ import {
   addApartment,
   setDaysLeft,
   nextFloor,
-  apartmentToObject,
+  apartmentToRustApartment,
   floorToString,
   floorToNum,
+  RustApartment,
+  rustApartmentToApartment,
+  stringNumToFloor,
 } from "./Floors";
 import Floors from "./Floors";
 import Checkboxes from "./Checkboxes";
 import { Dispatch } from "react";
 import LastToWash, { Position, positionToFloorPosition } from "./LastToWash";
 import Holidays from "./Holidays";
+import Navbar from "./Navbar";
 
 interface PlanCreationParameters {
   setPreview: (preview: string) => void;
@@ -48,6 +52,58 @@ interface PlanCreationParameters {
   setRegionList: (regionList: [string, string][]) => void;
   lastApartment: Apartment | undefined;
   setLastApartment: Dispatch<any>;
+}
+
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
+
+async function invokeResult<T>(
+  command: string,
+  args?: any,
+): Promise<Result<T, string>> {
+  try {
+    const value = await invoke<T>(command, args);
+    return { ok: true, value };
+  } catch (error) {
+    return { ok: false, error: error as string };
+  }
+}
+
+interface RustConfig {
+  position_map: Map<String, RustApartment>;
+  title: String;
+}
+
+function mkRustConfig(
+  floors: Map<Floor, Apartment>,
+  address: String,
+): RustConfig {
+  const floorMap = new Map(
+    Array.of(...floors).map(([floor, apartment]) => [
+      floorToString(floor),
+      apartmentToRustApartment(apartment),
+    ]),
+  );
+
+  return { position_map: floorMap, title: address };
+}
+
+interface Config {
+  floors: Map<Floor, Apartment>;
+  address: string;
+}
+
+function mkConfig(rustCfg: RustConfig): Config {
+  console.log(rustCfg);
+  const floorMap = new Map(
+    Array.of(...Object.entries(rustCfg.position_map)).map(
+      ([floor, apartment]) => [
+        stringNumToFloor(floor.toString()),
+        rustApartmentToApartment(apartment),
+      ],
+    ),
+  );
+
+  return { floors: floorMap, address: rustCfg.title.toString() };
 }
 
 function PlanCreation({
@@ -88,13 +144,6 @@ function PlanCreation({
     if (lastPosition === "" || lastFloor === "") {
       throw "Position error";
     }
-    const floorMap = new Map(
-      Array.of(...floors).map(([floor, apartment]) => [
-        floorToString(floor),
-        apartmentToObject(apartment),
-      ]),
-    );
-
     const daysLeft = maxDays - lastDay;
     const apartmentInfo = {
       current_floor: floorToNum(lastFloor),
@@ -110,7 +159,7 @@ function PlanCreation({
     );
 
     const preview: string = await invoke("create_laundry_plan", {
-      config: { position_map: floorMap, title: address },
+      config: mkRustConfig(floors, address),
       year: Number(year),
       apartmentInfo: apartmentInfo,
       holidays: new Map(holidayDatesStr),
@@ -159,6 +208,27 @@ function PlanCreation({
 
       return newHolidays;
     });
+  };
+
+  const onSave = async () => {
+    const config = mkRustConfig(floors, address);
+
+    await invoke("save_config", { config: config });
+  };
+
+  const onLoad = async () => {
+    const rustConfigResult: Result<RustConfig, String> =
+      await invokeResult("read_config");
+
+    if (rustConfigResult.ok) {
+      const config = mkConfig(rustConfigResult.value);
+      setAddress(config.address);
+      setFloors(config.floors);
+    } else {
+      if (rustConfigResult.error !== "No path given.") {
+        alert(`Ungültige Konfiguration: ${rustConfigResult.error}`);
+      }
+    }
   };
 
   const canCreatePlan = () => {
@@ -275,6 +345,7 @@ function PlanCreation({
 
   return (
     <main className="container">
+      <Navbar onSave={onSave} onLoad={onLoad} />
       <section className="section">
         <div className="container">
           <div className="columns">

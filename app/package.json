@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-dialog": "^2.4.2",
     "@tauri-apps/plugin-opener": "^2",
     "bootstrap": "^5.3.8",
     "bulma-calendar": "^7.1.1",
