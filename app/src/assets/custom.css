@@ -18,6 +18,9 @@
 .apartment {
   width: 70%;
 }
+.sunday {
+  color: red !important;
+}
 #house-name {
   float: left;
 }

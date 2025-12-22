@@ -8,9 +8,22 @@ fn create_row(day_data: &DayHTMLData) -> TableRow {
     let date = TableCell::default().with_raw(day_data.date.clone());
     let day = TableCell::default().with_raw(day_data.day.clone());
     let appartment = TableCell::default().with_raw(day_data.appartment.clone());
+
+    let day_attrs = if day_data.day == "So" {
+        "fs-7 day sunday"
+    } else {
+        "fs-7 day"
+    };
+
+    let date_attrs = if day_data.day == "So" {
+        "fs-7 date sunday"
+    } else {
+        "fs-7 date"
+    };
+
     let row = TableRow::new()
-        .with_cell(date.with_attributes([("class", "fs-7 date")]))
-        .with_cell(day.with_attributes([("class", "fs-7 day")]))
+        .with_cell(date.with_attributes([("class", date_attrs)]))
+        .with_cell(day.with_attributes([("class", day_attrs)]))
         .with_cell(appartment.with_attributes([("class", "fs-7 apartment")]));
     if day_data.is_holiday {
         row.with_attributes([("class", "table-info")])
