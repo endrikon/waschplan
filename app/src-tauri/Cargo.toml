@@ -1,7 +1,7 @@
 [package]
-name = "tauri-app"
+name = "waschplan"
 version = "0.1.0"
-description = "A Tauri App"
+description = "App to generate laundry plans"
 authors = ["you"]
 edition = "2021"
 

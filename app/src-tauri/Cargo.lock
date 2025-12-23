@@ -4319,25 +4319,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tauri-app"
-version = "0.1.0"
-dependencies = [
- "build_html",
- "datetime",
- "num-traits",
- "reqwest",
- "rust_iso3166",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-http",
- "tauri-plugin-opener",
- "tokio",
-]
-
-[[package]]
 name = "tauri-build"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5196,6 +5177,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bfa7760aed19e106de2c7c0b581b509f2f25d3dacaf737cb82ac61bc6d760b0e"
 dependencies = [
  "try-lock",
+]
+
+[[package]]
+name = "waschplan"
+version = "0.1.0"
+dependencies = [
+ "build_html",
+ "datetime",
+ "num-traits",
+ "reqwest",
+ "rust_iso3166",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-http",
+ "tauri-plugin-opener",
+ "tokio",
 ]
 
 [[package]]
