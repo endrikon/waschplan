@@ -662,7 +662,7 @@ impl Apartment {
         position_map: &HashMap<u32, FloorInfo>,
     ) -> Result<Apartment, ValidationError> {
         apartment_info.validate(config)?;
-        let max_floor = (config.position_map.len() - 1) as u32;
+        let max_floor = position_map.keys().max().unwrap().clone();
         let floor = Floor {
             floor: apartment_info.current_floor,
             max: max_floor,
