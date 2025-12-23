@@ -1,0 +1,30 @@
+{
+  "title": "House 1",
+  "position_map": {
+    "2": {
+      "ThreeApartments": {
+        "left_days_total": 2,
+        "middle_days_total": 1,
+        "right_days_total": 2
+      }
+    },
+    "3": {
+      "TwoApartments": {
+        "left_days_total": 2,
+        "right_days_total": 2
+      }
+    },
+    "0": {
+      "OneApartment": {
+        "days_total": 1
+      }
+    },
+    "1": {
+      "ThreeApartments": {
+        "left_days_total": 2,
+        "middle_days_total": 1,
+        "right_days_total": 2
+      }
+    }
+  }
+}

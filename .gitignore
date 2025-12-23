@@ -13,3 +13,5 @@ devenv.local.nix
 
 **/src-tauri/*.html
 **/src-tauri/*.pdf
+**/result
+/result
